@@ -1,0 +1,40 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Daycem2003",email = "daycemfekih@gmail.com"}
+]
+requires-python = "^3.11"
+dependencies = [
+    "django (>=5.2,<6.0)",
+    "djangorestframework (>=3.16,<4.0)",
+    "python-dotenv (>=1.2.3,<2.0.0)",
+    "celery (>=5.6.3,<6.0.0)",
+    "redis (>=8.1.0,<9.0.0)",
+    "psycopg2-binary (>=2.9.12,<3.0.0)",
+    "pydantic-settings (>=2.15.0,<3.0.0)",
+    "python-jose[cryptography] (>=3.5.0,<4.0.0)",
+    "passlib[bcrypt] (>=1.7.4,<2.0.0)",
+    "bcrypt (>=4.0.0,<6.0.0)",
+    "email-validator (>=2.0,<3.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-django (>=4.14.0,<5.0.0)",
+    "black (>=26.5.1,<27.0.0)",
+    "ruff (>=0.16.3,<0.17.0)",
+    "pytest-asyncio (>=1.4.0,<2.0.0)"
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "src.config.settings.development"
+python_files = ["test_*.py", "*_test.py"]
+asyncio_mode = "auto"
