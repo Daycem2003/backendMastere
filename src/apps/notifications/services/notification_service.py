@@ -5,6 +5,7 @@ from django.db import transaction
 
 from src.apps.candidate_profile.models import CandidateProfile
 from src.apps.masters.models import Application
+from src.apps.notifications.adapters.websocket_publisher import WebsocketEventPublisher
 from src.apps.notifications.dto.notification import NotifyDocumentIssueDTO
 from src.apps.notifications.exceptions.notification_exceptions import (
     ApplicationDoesNotBelongToCandidate,
@@ -13,18 +14,26 @@ from src.apps.notifications.exceptions.notification_exceptions import (
     NotificationNotFound,
 )
 from src.apps.notifications.models import NotificationRecord
+from src.apps.notifications.ports.event_publisher import EventPublisherProtocol
 from src.apps.notifications.selectors.notification_selector import get_by_pubkey
-from src.apps.websocket_events.emitter import notify_user
 
 logger = logging.getLogger(__name__)
 
 NOTIFICATION_CREATED_EVENT = "notification:new"
 
 
+def _get_default_publisher() -> EventPublisherProtocol:
+    return WebsocketEventPublisher()
+
+
 class NotificationService:
     @staticmethod
     @transaction.atomic
-    def notify_document_issue(payload: NotifyDocumentIssueDTO, actor) -> NotificationRecord:
+    def notify_document_issue(
+        payload: NotifyDocumentIssueDTO,
+        actor,
+        event_publisher: EventPublisherProtocol | None = None,
+    ) -> NotificationRecord:
         """Couvre les deux cas :
         - `application_pubkey` absent -> notification liée au profil
           (documents soumis à la création, avant toute candidature).
@@ -55,7 +64,8 @@ class NotificationService:
             corps=payload.corps,
         )
 
-        notify_user(
+        publisher = event_publisher if event_publisher is not None else _get_default_publisher()
+        publisher.publish(
             user_id=candidate.user_id,
             event=NOTIFICATION_CREATED_EVENT,
             payload={

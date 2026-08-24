@@ -1,13 +1,14 @@
 """Tests ciblant la logique métier clé du module :
 - application_pubkey absent -> notification liée seulement au profil
 - application_pubkey présent mais n'appartenant pas au candidat -> rejeté
-- l'event websocket est bien émis via notify_user
+- l'event websocket est bien émis via EventPublisherProtocol (WebsocketEventPublisher par défaut ou injecté)
 """
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.apps.notifications.adapters.websocket_publisher import WebsocketEventPublisher
 from src.apps.notifications.dto.notification import NotifyDocumentIssueDTO
 from src.apps.notifications.exceptions.notification_exceptions import (
     ApplicationDoesNotBelongToCandidate,
@@ -38,7 +39,7 @@ def _fake_candidate(user_id=42, pk=1):
     return SimpleNamespace(pubkey="cand_1", user_id=user_id, id=pk)
 
 
-@patch("src.apps.notifications.services.notification_service.notify_user")
+@patch("src.apps.websocket_events.emitter.notify_user")
 @patch("src.apps.notifications.services.notification_service.NotificationRecord")
 @patch("src.apps.notifications.services.notification_service.CandidateProfile")
 def test_notify_without_application_creates_profile_level_notification(
@@ -47,8 +48,14 @@ def test_notify_without_application_creates_profile_level_notification(
     candidate = _fake_candidate()
     mock_candidate_cls.objects.filter.return_value.first.return_value = candidate
     created = SimpleNamespace(
-        pk=1, pubkey="notif_x", candidate_profile=candidate, application=None,
-        motif="DOCUMENT_MANQUANT", document_concerne="DIPLOME", objet="o", corps="c",
+        pk=1,
+        pubkey="notif_x",
+        candidate_profile=candidate,
+        application=None,
+        motif="DOCUMENT_MANQUANT",
+        document_concerne="DIPLOME",
+        objet="o",
+        corps="c",
         envoyee_le=SimpleNamespace(isoformat=lambda: "2026-08-24T00:00:00"),
     )
     mock_record_cls.objects.create.return_value = created
@@ -61,6 +68,57 @@ def test_notify_without_application_creates_profile_level_notification(
     assert call["user_id"] == candidate.user_id
     assert call["event"] == NOTIFICATION_CREATED_EVENT
     assert call["payload"]["application_pubkey"] is None
+
+
+@patch("src.apps.notifications.services.notification_service.NotificationRecord")
+@patch("src.apps.notifications.services.notification_service.CandidateProfile")
+def test_notify_with_injected_publisher(mock_candidate_cls, mock_record_cls):
+    candidate = _fake_candidate()
+    mock_candidate_cls.objects.filter.return_value.first.return_value = candidate
+    created = SimpleNamespace(
+        pk=1,
+        pubkey="notif_injected",
+        candidate_profile=candidate,
+        application=None,
+        motif="DOCUMENT_MANQUANT",
+        document_concerne="DIPLOME",
+        objet="o",
+        corps="c",
+        envoyee_le=SimpleNamespace(isoformat=lambda: "2026-08-24T00:00:00"),
+    )
+    mock_record_cls.objects.create.return_value = created
+    fake_publisher = MagicMock()
+
+    result = NotificationService.notify_document_issue(
+        _dto(), actor=SimpleNamespace(pk=99), event_publisher=fake_publisher
+    )
+
+    assert result.pubkey == "notif_injected"
+    fake_publisher.publish.assert_called_once_with(
+        user_id=candidate.user_id,
+        event=NOTIFICATION_CREATED_EVENT,
+        payload={
+            "notification_pubkey": "notif_injected",
+            "motif": "DOCUMENT_MANQUANT",
+            "document_concerne": "DIPLOME",
+            "objet": "o",
+            "corps": "c",
+            "application_pubkey": None,
+            "envoyee_le": "2026-08-24T00:00:00",
+        },
+    )
+
+
+@patch("src.apps.websocket_events.emitter.notify_user")
+def test_websocket_publisher_adapter_delegates_to_emitter(mock_notify_user):
+    mock_notify_user.return_value = True
+    publisher = WebsocketEventPublisher()
+    success = publisher.publish(user_id=10, event="notification:new", payload={"test": 1})
+
+    assert success is True
+    mock_notify_user.assert_called_once_with(
+        user_id=10, event="notification:new", payload={"test": 1}
+    )
 
 
 @patch("src.apps.notifications.services.notification_service.CandidateProfile")
