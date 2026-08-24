@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "src.apps.masters.apps.MastersConfig", "src.apps.documents.apps.DocumentsConfig",
     "src.apps.eligibility.apps.EligibilityConfig", "src.apps.scoring.apps.ScoringConfig",
     "src.apps.applications.apps.ApplicationsConfig", "src.apps.authorization.apps.AuthorizationConfig",
+    "src.apps.notifications.apps.NotificationsConfig", "src.apps.websocket_events.apps.WebsocketEventsConfig",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.middleware.common.CommonMiddleware",
