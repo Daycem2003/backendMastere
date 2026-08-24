@@ -1,0 +1,81 @@
+// Patch à ajouter au schema.prisma de référence pour refléter les tables
+// introduites par le module `documents` (workflow de versioning + revue),
+// en plus de MST_DOCUMENTS / MST_REQUIRED_DOCUMENTS déjà existants.
+//
+// Ces tables sont volontairement séparées de MST_DOCUMENTS pour ne pas
+// altérer le modèle legacy existant.
+
+enum DocumentReviewStatusEnum {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model DocumentVersion {
+  id     Int    @id @default(autoincrement())
+  pubkey String @unique
+
+  documentId Int?
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  candidateProfileId Int
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  versionNumber Int
+  documentType  String
+  status        DocumentReviewStatusEnum @default(PENDING_REVIEW)
+
+  storageKey String
+  mimeType   String
+  fileSize   BigInt
+  checksum   String  @default("")
+  isActive   Boolean @default(true)
+
+  reviewerId Int?
+  reviewer   User?     @relation(fields: [reviewerId], references: [id], onUpdate: Cascade)
+  reviewedAt DateTime?
+
+  rejectionReason String?
+
+  replacedVersionId Int?
+  replacedVersion   DocumentVersion?  @relation("VersionReplacement", fields: [replacedVersionId], references: [id], onUpdate: Cascade)
+  replacements      DocumentVersion[] @relation("VersionReplacement")
+
+  auditEvents DocumentAuditEvent[]
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime? @db.Timestamp()
+
+  @@unique([documentId, versionNumber])
+  @@index([candidateProfileId, status])
+  @@index([candidateProfileId, isActive])
+  @@map("DOCUMENT_VERSIONS")
+}
+
+model DocumentAuditEvent {
+  id Int @id @default(autoincrement())
+
+  documentVersionId Int
+  documentVersion   DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  action String
+
+  actorId Int?
+  actor   User? @relation(fields: [actorId], references: [id], onUpdate: Cascade)
+
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([documentVersionId, createdAt])
+  @@map("DOCUMENT_AUDIT_EVENTS")
+}
+
+// À ajouter dans le model Document existant :
+//   versions DocumentVersion[]
+//
+// À ajouter dans le model CandidateProfile existant :
+//   documentVersions DocumentVersion[]
+//
+// À ajouter dans le model User existant :
+//   reviewedDocumentVersions DocumentVersion[]
+//   documentAuditEvents      DocumentAuditEvent[]
