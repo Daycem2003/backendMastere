@@ -39,6 +39,15 @@ def _fake_candidate(user_id=42, pk=1):
     return SimpleNamespace(pubkey="cand_1", user_id=user_id, id=pk)
 
 
+@pytest.fixture(autouse=True)
+def mock_db_transaction():
+    """Bypasses transaction.atomic in unit tests that mock the ORM."""
+    with patch("django.db.transaction.Atomic.__enter__", return_value=None), patch(
+        "django.db.transaction.Atomic.__exit__", return_value=None
+    ):
+        yield
+
+
 @patch("src.apps.websocket_events.emitter.notify_user")
 @patch("src.apps.notifications.services.notification_service.NotificationRecord")
 @patch("src.apps.notifications.services.notification_service.CandidateProfile")

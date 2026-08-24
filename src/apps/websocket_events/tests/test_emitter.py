@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.apps.websocket_events.emitter import notify_group, notify_user
 
@@ -6,6 +6,7 @@ from src.apps.websocket_events.emitter import notify_group, notify_user
 @patch("src.apps.websocket_events.emitter.get_channel_layer")
 def test_notify_user_sends_to_correct_group(mock_get_channel_layer):
     mock_layer = MagicMock()
+    mock_layer.group_send = AsyncMock()
     mock_get_channel_layer.return_value = mock_layer
 
     result = notify_user(user_id=42, event="notification:new", payload={"objet": "x"})
@@ -28,7 +29,7 @@ def test_notify_user_returns_false_when_no_channel_layer_configured(mock_get_cha
 @patch("src.apps.websocket_events.emitter.get_channel_layer")
 def test_notify_user_never_raises_on_backend_error(mock_get_channel_layer):
     mock_layer = MagicMock()
-    mock_layer.group_send.side_effect = RuntimeError("redis down")
+    mock_layer.group_send = AsyncMock(side_effect=RuntimeError("redis down"))
     mock_get_channel_layer.return_value = mock_layer
 
     # ne doit jamais lever : un échec temps réel ne doit pas casser le flux métier
@@ -38,9 +39,12 @@ def test_notify_user_never_raises_on_backend_error(mock_get_channel_layer):
 @patch("src.apps.websocket_events.emitter.get_channel_layer")
 def test_notify_group_uses_given_group_name(mock_get_channel_layer):
     mock_layer = MagicMock()
+    mock_layer.group_send = AsyncMock()
     mock_get_channel_layer.return_value = mock_layer
 
-    notify_group("master:7", event="master:update", payload={})
+    result = notify_group("master:7", event="master:update", payload={})
 
-    group_name, _ = mock_layer.group_send.call_args.args
+    assert result is True
+    group_name, message = mock_layer.group_send.call_args.args
     assert group_name == "master:7"
+    assert message["event"] == "master:update"

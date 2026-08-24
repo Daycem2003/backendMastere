@@ -5,21 +5,16 @@ MST_NOTIFICATION_RECORDS est une table du schéma Prisma de référence
 n'exécute donc AUCUN DDL en base — elle enregistre uniquement l'état du
 modèle pour Django (nécessaire à makemigrations/migrate pour les FKs
 d'autres apps qui pointeraient vers ce modèle).
-
-La modification réelle du schéma (ajout de `candidateProfileId`, passage
-de `applicationId` en optionnel, ajout de `luLe`) doit être appliquée côté
-base de données via `prisma migrate dev` en utilisant
-`_PRISMA_SCHEMA_PATCH.prisma` fourni à la racine du zip.
 """
-from django.db import migrations, models
 import django.db.models.deletion
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
     initial = True
     dependencies = [
         ("candidate_profile", "__first__"),
-        ("masters", "__first__"),
+        ("applications", "__first__"),
     ]
 
     operations = [
@@ -46,7 +41,7 @@ class Migration(migrations.Migration):
                         ("created_at", models.DateTimeField(auto_now_add=True, db_column="createdAt")),
                         ("deleted_at", models.DateTimeField(blank=True, db_column="deletedAt", null=True)),
                         ("candidate_profile", models.ForeignKey(db_column="candidateProfileId", on_delete=django.db.models.deletion.CASCADE, related_name="notifications", to="candidate_profile.candidateprofile")),
-                        ("application", models.ForeignKey(blank=True, db_column="applicationId", null=True, on_delete=django.db.models.deletion.CASCADE, related_name="notifications", to="masters.application")),
+                        ("application", models.ForeignKey(blank=True, db_column="applicationId", null=True, on_delete=django.db.models.deletion.CASCADE, related_name="notifications", to="applications.application")),
                     ],
                     options={
                         "db_table": "MST_NOTIFICATION_RECORDS",

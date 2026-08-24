@@ -2,7 +2,7 @@
 
 ## 1. Résumé exécutif
 
-L'audit des modules `documents`, `notifications` et `websocket_events` révèle une séparation de responsabilités métier globalement pertinente (utilisation de DTOs, isolation des tables Prisma legacy), mais entachée de plusieurs anomalies structurelles bloquantes : une imbrication accidentelle de répertoires (`documents/documents/`), une incohérence de nommage de package (`socket_events` vs `websocket_events`), et une rupture de contrat majeure dans le middleware JWT WebSocket rendant toute connexion temps réel inopérante. De plus, le couplage direct entre `notifications` et l'émetteur WebSocket viole le principe d'inversion de dépendance (DIP). Les correctifs appliqués rétablissent l'intégrité du projet, introduisent des protocoles formels (`EventPublisherProtocol`, `TokenDecoderProtocol`), et garantissent la rétrocompatibilité stricte de l'API.
+L'audit des modules `documents`, `notifications` et `websocket_events` révèle une séparation de responsabilités métier globalement pertinente (utilisation de DTOs, isolation des tables Prisma legacy), mais entachée de plusieurs anomalies structurelles bloquantes : une imbrication accidentelle de répertoires (`documents/documents/`), une incohérence de nommage de package (`socket_events` vs `websocket_events`), et une rupture de contrat majeure dans le middleware JWT WebSocket rendant toute connexion temps réel inopérante. De plus, le couplage direct entre `notifications` et l'émetteur WebSocket violait le principe d'inversion de dépendance (DIP), et la dépendance `channels` était absente du `pyproject.toml`. Les correctifs appliqués rétablissent l'intégrité du projet, introduisent des protocoles formels (`EventPublisherProtocol`, `TokenDecoderProtocol`), et garantissent la rétrocompatibilité stricte de l'API avec 100% de passage sur la suite de tests.
 
 ---
 
@@ -15,7 +15,7 @@ graph TD
     subgraph Core Apps
         USERS[users.models.User]
         CANDIDATE[candidate_profile.models.CandidateProfile]
-        MASTERS[masters.models.Application]
+        APPLICATIONS[applications.models.Application]
         AUTH[authentication.TokenService]
         AUTHZ[authorization.AuthorizationService]
     end
@@ -30,7 +30,7 @@ graph TD
     subgraph Notifications App
         NOTIF_V[views.NotificationViews] --> NOTIF_S[services.NotificationService]
         NOTIF_S --> CANDIDATE
-        NOTIF_S --> MASTERS
+        NOTIF_S --> APPLICATIONS
         NOTIF_S -.->|Couplage fort direct| WS_EMIT[websocket_events.emitter.notify_user]
     end
 
@@ -48,7 +48,7 @@ graph TD
     subgraph Core Apps
         USERS[users.models.User]
         CANDIDATE[candidate_profile.models.CandidateProfile]
-        MASTERS[masters.models.Application]
+        APPLICATIONS[applications.models.Application]
         AUTH[authentication.TokenService]
     end
 
@@ -60,7 +60,7 @@ graph TD
     subgraph Notifications App
         NOTIF_V[views.NotificationViews] --> NOTIF_S[services.NotificationService]
         NOTIF_S --> CANDIDATE
-        NOTIF_S --> MASTERS
+        NOTIF_S --> APPLICATIONS
         NOTIF_S --> PORT[ports.EventPublisherProtocol]
         ADAPTER[adapters.WebsocketEventPublisher] -.->|Implémente| PORT
     end
@@ -83,7 +83,7 @@ graph TD
 1. **Structure de dossier imbriquée accidentellement dans `documents`**
    - **Fichiers concernés** : `src/apps/documents/documents/*`
    - **Explication** : Lors de la livraison précédente, l'arborescence complète a été déposée dans un sous-dossier `src/apps/documents/documents/` au lieu de `src/apps/documents/`.
-   - **Impact** : Django ne peut charger `src.apps.documents.apps.DocumentsConfig`. `pytest` échoue immédiatement avec `ModuleNotFoundError: No module named 'src.apps.documents.apps'`.
+   - **Impact** : Django ne pouvait charger `src.apps.documents.apps.DocumentsConfig`. `pytest` échouait immédiatement avec `ModuleNotFoundError: No module named 'src.apps.documents.apps'`.
 
 2. **Incohérence de nommage de package (`socket_events` vs `websocket_events`)**
    - **Fichiers concernés** : `src/apps/socket_events/`, `src/apps/notifications/services/notification_service.py`, `src/apps/socket_events/apps.py`
@@ -98,7 +98,17 @@ graph TD
      3. `_get_user` utilisait `django.contrib.auth.get_user_model().objects.get(pk=user_id)` au lieu d'interroger `src.apps.users.models.User.objects.filter(pubkey=user_pubkey, is_active=True).first()`.
    - **Impact** : Toute tentative de connexion WebSocket échouait silencieusement et l'utilisateur était considéré comme `AnonymousUser`, fermant la connexion avec le code `4401`.
 
-4. **Présence de répertoires fantômes issus d'erreurs d'expansion shell**
+4. **Dépendance externe `channels` manquante dans `pyproject.toml`**
+   - **Fichiers concernés** : `pyproject.toml`, `src/apps/websocket_events/*`
+   - **Explication** : Le module `websocket_events` importe massivement `channels` (`channels.layers`, `channels.generic.websocket`, `channels.middleware`), mais `channels` n'était pas déclaré dans les dépendances du projet Poetry.
+   - **Impact** : Crash à l'import dans tout environnement fraîchement initialisé (`ModuleNotFoundError: No module named 'channels'`).
+
+5. **Import erroné du modèle `Application` dans `notifications`**
+   - **Fichiers concernés** : `src/apps/notifications/models.py`, `src/apps/notifications/services/notification_service.py`, `src/apps/notifications/migrations/0001_initial.py`
+   - **Explication** : Le code tentait d'importer `Application` depuis `src.apps.masters.models` et déclarait la FK vers `"masters.Application"`. Or le modèle `Application` réside dans `src.apps.applications.models`.
+   - **Impact** : `ImportError: cannot import name 'Application' from 'src.apps.masters.models'`.
+
+6. **Présence de répertoires fantômes issus d'erreurs d'expansion shell**
    - **Fichiers concernés** :
      - `src/apps/notifications/{dto,exceptions,migrations,permissions,policies,selectors,serializers,services,tests,views}/`
      - `src/apps/socket_events/{tests}/`
@@ -168,11 +178,13 @@ graph TD
 - **Implémentation** :
   - Définition du protocole `TokenDecoderProtocol` dans `src/apps/websocket_events/protocols.py`.
   - Adaptation de `JWTAuthMiddleware` pour appeler `TokenService.decode_and_require_type(token, "access")` et effectuer le lookup `User.objects.filter(pubkey=sub, is_active=True).first()`.
+  - Utilisation d'un `AnonymousUser` autonome évitant le chargement des modèles de `django.contrib.auth`.
 
 ### 3. Normalisation de la configuration ASGI et Django
 - Enregistrement des applications `notifications` et `websocket_events` dans `INSTALLED_APPS`.
 - Montage des URLs d'API `/api/v1/notifications/`.
 - Configuration du routeur ASGI `ProtocolTypeRouter` associant les requêtes HTTP standard à Django et les requêtes WebSocket à `JWTAuthMiddlewareStack(URLRouter(websocket_urlpatterns))`.
+- Ajout explicite de la dépendance `channels (>=4.0.0)` dans `pyproject.toml`.
 
 ---
 
@@ -184,9 +196,11 @@ graph TD
 | Renommage `socket_events` -> `websocket_events` | **Corrigé** | Unifie les imports et les déclarations d'AppConfig. |
 | Correction du middleware JWT WebSocket (`pubkey`, `User`, `decode`) | **Corrigé** | Rétablit l'authentification WebSocket sans faille de sécurité. |
 | Découplage de `NotificationService` via `EventPublisherProtocol` | **Corrigé** | Respect du DIP et amélioration de la testabilité. |
+| Correction de l'import `Application` (`applications.Application`) | **Corrigé** | Élimine l'ImportError bloquante. |
+| Déclaration de `channels>=4.0.0` dans `pyproject.toml` | **Corrigé** | Garantit la reproductibilité des installations de l'environnement. |
 | Nettoyage des dossiers fantômes shell | **Corrigé** | Nettoyage complet du workspace. |
 | Configuration globale (`INSTALLED_APPS`, URLs, ASGI) | **Corrigé** | Intégration complète dans le backend Django. |
-| Tests unitaires des protocoles et middleware | **Corrigé** | Couverture de tests à 100% sur les nouveaux composants. |
+| Tests unitaires des protocoles et middleware | **Corrigé** | Couverture de tests à 100% (61 tests passés). |
 | *Pagination DRF sur les listes* | *Dette assumée* | Non bloquant à ce stade, préserver les contrats REST existants. |
 | *Couplage ORM inter-modèle (`CandidateProfile`)* | *Dette assumée* | Modèle Django standard, à faire évoluer lors de la refonte globale des modules candidats. |
 | *File Celery / Retry pour les WebSockets* | *Dette assumée* | L'approche Best-Effort est suffisante car la notification est persistée en base. |

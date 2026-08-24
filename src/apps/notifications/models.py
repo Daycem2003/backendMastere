@@ -20,9 +20,6 @@ class NotificationRecord(models.Model):
     vrai destinataire), `applicationId` devient optionnel pour couvrir le
     cas où le candidat n'a pas encore postulé (documents de création de
     profil, avant tout clic sur "postuler").
-
-    Voir _PRISMA_SCHEMA_PATCH.prisma à la racine du zip pour le patch
-    correspondant à appliquer sur le schema.prisma de référence.
     """
 
     id = models.AutoField(primary_key=True)
@@ -36,7 +33,7 @@ class NotificationRecord(models.Model):
     )
 
     application = models.ForeignKey(
-        "masters.Application",
+        "applications.Application",
         on_delete=models.CASCADE,
         related_name="notifications",
         null=True,
@@ -49,8 +46,6 @@ class NotificationRecord(models.Model):
     objet = models.TextField()
     corps = models.TextField()
 
-    # Ajout pragmatique hors schéma strict (nécessaire pour une UX "vu/pas
-    # vu" côté candidat) — à ajouter au patch Prisma si retenu.
     lu_le = models.DateTimeField(null=True, blank=True, db_column="luLe")
 
     envoyee_le = models.DateTimeField(auto_now_add=True, db_column="envoyeeLe")

@@ -3,8 +3,8 @@ import uuid
 
 from django.db import transaction
 
+from src.apps.applications.models import Application
 from src.apps.candidate_profile.models import CandidateProfile
-from src.apps.masters.models import Application
 from src.apps.notifications.adapters.websocket_publisher import WebsocketEventPublisher
 from src.apps.notifications.dto.notification import NotifyDocumentIssueDTO
 from src.apps.notifications.exceptions.notification_exceptions import (

@@ -369,6 +369,27 @@ files = [
 pycparser = {version = "*", markers = "implementation_name != \"PyPy\""}
 
 [[package]]
+name = "channels"
+version = "4.3.2"
+description = "Brings async, event-driven capabilities to Django."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "channels-4.3.2-py3-none-any.whl", hash = "sha256:fef47e9055a603900cf16cef85f050d522d9ac4b3daccf24835bd9580705c176"},
+    {file = "channels-4.3.2.tar.gz", hash = "sha256:f2bb6bfb73ad7fb4705041d07613c7b4e69528f01ef8cb9fb6c21d9295f15667"},
+]
+
+[package.dependencies]
+asgiref = ">=3.9.0,<4"
+Django = ">=4.2"
+
+[package.extras]
+daphne = ["daphne (>=4.0.0)"]
+tests = ["async-timeout", "coverage (>=4.5,<5.0)", "pytest", "pytest-asyncio", "pytest-django", "selenium"]
+types = ["types-channels"]
+
+[[package]]
 name = "click"
 version = "8.4.2"
 description = "Composable command line interface toolkit"
@@ -1416,4 +1437,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "f98eec0ae19dcf66c67ea2c1c2e6154213d95075f1b33b42487b5bf0446cdd90"
+content-hash = "216fe4cf081f99986e746f7fab250c0d324ad507f06ef92e0c3bd60f8d67ea4c"

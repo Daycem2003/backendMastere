@@ -10,17 +10,38 @@ from urllib.parse import parse_qs
 
 from channels.db import database_sync_to_async
 from channels.middleware import BaseMiddleware
-from django.contrib.auth.models import AnonymousUser
 
 from src.apps.websocket_events.protocols import TokenDecoderProtocol
 
 logger = logging.getLogger(__name__)
 
 
+class AnonymousUser:
+    """Représentation légère d'un utilisateur anonyme / non authentifié."""
+
+    id = None
+    pk = None
+    pubkey = None
+    email = ""
+    is_active = False
+    is_authenticated = False
+    is_anonymous = True
+
+    def __str__(self):
+        return "AnonymousUser"
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__)
+
+    def __hash__(self):
+        return 1
+
+
 def _decode_token(token: str, token_service: TokenDecoderProtocol | None = None) -> str | None:
     """Retourne le pubkey utilisateur encodé dans le claim `sub`, ou None si invalide/expiré."""
     if token_service is None:
         from src.apps.authentication.services.token_service import TokenService
+
         token_service = TokenService
 
     try:
