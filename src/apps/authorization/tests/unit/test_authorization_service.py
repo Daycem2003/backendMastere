@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from src.apps.authorization.services.authorization_service import AuthorizationService
 
@@ -27,7 +28,9 @@ async def test_user_has_permission_false(mock_get_codes):
 @pytest.mark.asyncio
 @patch("src.apps.authorization.services.authorization_service.get_effective_permission_codes")
 async def test_check_or_raise_raises_when_missing(mock_get_codes):
-    from src.apps.authorization.exceptions.authorization_exceptions import PermissionDeniedException
+    from src.apps.authorization.exceptions.authorization_exceptions import (
+        PermissionDeniedException,
+    )
 
     mock_get_codes.return_value = set()
 

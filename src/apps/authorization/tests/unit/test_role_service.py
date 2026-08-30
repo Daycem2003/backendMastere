@@ -1,11 +1,12 @@
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from src.apps.authorization.services.role_service import RoleService
+import pytest
+
 from src.apps.authorization.exceptions.authorization_exceptions import (
-    RoleAlreadyExistsException,
     CannotModifySystemRoleException,
+    RoleAlreadyExistsException,
 )
+from src.apps.authorization.services.role_service import RoleService
 
 
 @pytest.mark.asyncio

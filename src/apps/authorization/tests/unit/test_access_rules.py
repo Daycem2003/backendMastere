@@ -1,6 +1,6 @@
 from src.apps.authorization.domain.access_rules import DEFAULT_ROLE_PERMISSIONS
-from src.apps.authorization.domain.roles import BASE_ROLES
 from src.apps.authorization.domain.permissions import PERMISSION_CATALOG
+from src.apps.authorization.domain.roles import BASE_ROLES
 
 
 def test_every_base_role_has_a_default_permission_set():

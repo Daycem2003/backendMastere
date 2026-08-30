@@ -6,7 +6,7 @@ tests/unit/test_policies.py).
 """
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 from src.fastapi_app.main import app
 

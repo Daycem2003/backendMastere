@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-
 migration = import_module("src.apps.authorization.migrations.0002_seed_rbac")
 
 

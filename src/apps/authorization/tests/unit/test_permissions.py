@@ -1,17 +1,22 @@
-import pytest
-from unittest.mock import AsyncMock, patch
 from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
-from src.apps.authorization.permissions.role_based import require_roles
+import pytest
+
+from src.apps.authorization.exceptions.authorization_exceptions import (
+    PermissionDeniedException,
+)
 from src.apps.authorization.permissions.permission_based import require_permission
+from src.apps.authorization.permissions.role_based import require_roles
 from src.shared.exceptions.auth_exceptions import InsufficientPermissionsException
-from src.apps.authorization.exceptions.authorization_exceptions import PermissionDeniedException
 
 
 @pytest.mark.asyncio
-async def test_require_roles_allows_matching_role():
+@patch("src.apps.authorization.permissions.role_based.UserRole")
+async def test_require_roles_allows_matching_role(mock_user_role):
+    mock_user_role.objects.filter.return_value.exists.return_value = True
     dependency = require_roles("ADMIN")
-    user = SimpleNamespace(role="ADMIN")
+    user = SimpleNamespace(pubkey="usr_admin_123")
 
     result = await dependency(current_user=user)
 
@@ -19,12 +24,15 @@ async def test_require_roles_allows_matching_role():
 
 
 @pytest.mark.asyncio
-async def test_require_roles_rejects_non_matching_role():
+@patch("src.apps.authorization.permissions.role_based.UserRole")
+async def test_require_roles_rejects_non_matching_role(mock_user_role):
+    mock_user_role.objects.filter.return_value.exists.return_value = False
     dependency = require_roles("ADMIN")
-    user = SimpleNamespace(role="CANDIDATE")
+    user = SimpleNamespace(pubkey="usr_candidate_123")
 
     with pytest.raises(InsufficientPermissionsException):
         await dependency(current_user=user)
+
 
 
 @pytest.mark.asyncio

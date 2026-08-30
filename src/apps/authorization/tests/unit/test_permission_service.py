@@ -1,8 +1,11 @@
-import pytest
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
+from src.apps.authorization.exceptions.authorization_exceptions import (
+    PermissionNotFoundException,
+)
 from src.apps.authorization.services.permission_service import PermissionService
-from src.apps.authorization.exceptions.authorization_exceptions import PermissionNotFoundException
 
 
 @pytest.mark.asyncio

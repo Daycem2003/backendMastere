@@ -1,9 +1,9 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from src.apps.authorization.policies.master_policy import MasterPolicy
 from src.apps.authorization.policies.candidate_policy import CandidatePolicy
 from src.apps.authorization.policies.coordinator_policy import CoordinatorPolicy
+from src.apps.authorization.policies.master_policy import MasterPolicy
 from src.apps.authorization.services.authorization_service import AuthorizationService
 
 
