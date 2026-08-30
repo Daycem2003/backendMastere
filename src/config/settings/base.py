@@ -40,6 +40,7 @@ DATABASES = {
     }
 }
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+AUTH_USER_MODEL = "users.User"
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = os.getenv("TIME_ZONE", "Africa/Tunis")
 USE_I18N = True

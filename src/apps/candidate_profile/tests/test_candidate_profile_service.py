@@ -1,0 +1,44 @@
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from src.apps.candidate_profile.dto.candidate_profile import CreateCandidateProfileDTO
+from src.apps.candidate_profile.exceptions.candidate_profile_exceptions import ProfileAlreadyExists
+from src.apps.candidate_profile.services.candidate_profile_service import CandidateProfileService
+
+
+def _dto(**overrides):
+    base = dict(
+        nom="Ben Ali", prenom="Sami", cin="12345678", email="sami@example.com",
+        telephone="20123456", ville="Tunis", annee_naissance=2000,
+    )
+    base.update(overrides)
+    return CreateCandidateProfileDTO(**base)
+
+
+@patch("src.apps.candidate_profile.services.candidate_profile_service.get_by_user")
+def test_create_profile_raises_if_already_exists(mock_get_by_user):
+    mock_get_by_user.return_value = SimpleNamespace(pk=1)
+    with pytest.raises(ProfileAlreadyExists):
+        CandidateProfileService.create_profile(_dto(), user=SimpleNamespace(pk=99))
+
+
+@patch("src.apps.candidate_profile.services.candidate_profile_service.CandidateProfile")
+@patch("src.apps.candidate_profile.services.candidate_profile_service.get_by_user")
+def test_create_profile_generates_pubkey(mock_get_by_user, mock_model_cls):
+    mock_get_by_user.return_value = None
+    created = SimpleNamespace(pk=1)
+    mock_model_cls.objects.create.return_value = created
+
+    result = CandidateProfileService.create_profile(_dto(), user=SimpleNamespace(pk=99))
+
+    assert result is created
+    call_kwargs = mock_model_cls.objects.create.call_args.kwargs
+    assert call_kwargs["pubkey"].startswith("cand_")
+    assert call_kwargs["cin"] == "12345678"
+
+
+def test_annee_naissance_out_of_range_rejected():
+    with pytest.raises(ValueError):
+        _dto(annee_naissance=1800)

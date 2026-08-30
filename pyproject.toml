@@ -5,7 +5,7 @@ description = ""
 authors = [
     {name = "Daycem2003",email = "daycemfekih@gmail.com"}
 ]
-requires-python = "^3.11"
+requires-python = ">=3.11"
 dependencies = [
     "django (>=5.2,<6.0)",
     "djangorestframework (>=3.16,<4.0)",

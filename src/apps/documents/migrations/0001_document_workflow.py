@@ -12,6 +12,19 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
+            name="Document",
+            fields=[
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("pubkey", models.TextField(unique=True)),
+                ("nom", models.TextField()),
+                ("type", models.CharField(max_length=32)),
+                ("url", models.TextField()),
+                ("created_at", models.DateTimeField(blank=True, db_column="createdAt", null=True)),
+                ("deleted_at", models.DateTimeField(blank=True, db_column="deletedAt", null=True)),
+            ],
+            options={"db_table": "MST_DOCUMENTS"},
+        ),
+        migrations.CreateModel(
             name="DocumentVersion",
             fields=[
                 ("id", models.AutoField(primary_key=True, serialize=False)),

@@ -18,10 +18,10 @@ class Document(CreatedSoftDeleteModel):
     nom = models.TextField()
     type = PostgreSQLEnumField(enum_name="DocumentTypeEnum", choices=DocumentType.choices)
     url = models.TextField()
-    licence_year = models.OneToOneField("masters.LicenceYear", on_delete=models.CASCADE, related_name="releve", null=True, blank=True, db_column="licenceYearId")
-    diplome = models.OneToOneField("masters.Diplome", on_delete=models.CASCADE, related_name="pdf", null=True, blank=True, db_column="diplomeId")
-    master1_year = models.OneToOneField("masters.Master1Year", on_delete=models.CASCADE, related_name="releve_m1", null=True, blank=True, db_column="master1YearId")
-    redoublement_year = models.ForeignKey("masters.RedoublementYear", on_delete=models.CASCADE, related_name="justificatifs", null=True, blank=True, db_column="redoublementYearId")
+    licence_year = models.OneToOneField("candidate_profile.LicenceYear", on_delete=models.CASCADE, related_name="releve", null=True, blank=True, db_column="licenceYearId")
+    diplome = models.OneToOneField("candidate_profile.Diplome", on_delete=models.CASCADE, related_name="pdf", null=True, blank=True, db_column="diplomeId")
+    master1_year = models.OneToOneField("candidate_profile.Master1Year", on_delete=models.CASCADE, related_name="releve_m1", null=True, blank=True, db_column="master1YearId")
+    redoublement_year = models.ForeignKey("candidate_profile.RedoublementYear", on_delete=models.CASCADE, related_name="justificatifs", null=True, blank=True, db_column="redoublementYearId")
 
     class Meta:
         managed = False
