@@ -1,10 +1,13 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
+
 from src.apps.authorization.services.permission_service import PermissionService
 from src.apps.authorization.services.role_service import RoleService
-from src.apps.authorization.fastapi_router import router as authorization_router
 from src.config.settings.development import CORS_ALLOWED_ORIGINS
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await PermissionService.seed_default_permissions()
@@ -21,8 +24,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.include_router(authorization_router, prefix="/api/v1/authorization", tags=["Authorization"])
 
 
 @app.get("/health")
