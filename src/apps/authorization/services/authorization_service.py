@@ -1,8 +1,12 @@
 from asgiref.sync import sync_to_async
 
-from src.apps.authorization.selectors.authorization_selector import get_effective_permission_codes
+from src.apps.authorization.exceptions.authorization_exceptions import (
+    PermissionDeniedException,
+)
 from src.apps.authorization.models import UserRole
-from src.apps.authorization.exceptions.authorization_exceptions import PermissionDeniedException
+from src.apps.authorization.selectors.authorization_selector import (
+    get_effective_permission_codes,
+)
 
 
 class AuthorizationService:

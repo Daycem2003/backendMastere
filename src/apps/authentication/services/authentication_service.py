@@ -2,9 +2,9 @@ import uuid
 
 from django.db import IntegrityError, transaction
 
+from src.apps.authorization.services.role_assignment_service import RoleAssignmentService
 from src.apps.candidate_profile.models import CandidateProfile
-from src.apps.users.models import User, UserRole
-from src.apps.authorization.models import Role, UserRole as AssignedRole
+from src.apps.users.models import User
 from src.shared.exceptions.auth_exceptions import EmailAlreadyExistsException, InactiveUserException, InvalidCredentialsException, UserNotFoundException
 
 from .password_service import PasswordService
@@ -19,7 +19,7 @@ class AuthenticationService:
         try:
             user = User.objects.create_user(
                 pubkey=f"usr_{uuid.uuid4().hex[:20]}", email=payload.email,
-                password=payload.password, role=UserRole.CANDIDATE,
+                password=payload.password,
             )
             CandidateProfile.objects.create(
                 pubkey=f"cand_{uuid.uuid4().hex[:20]}", user=user, nom=payload.nom,
@@ -27,9 +27,7 @@ class AuthenticationService:
                 telephone=payload.telephone, ville=payload.ville,
                 annee_naissance=payload.annee_naissance,
             )
-            candidate_role = Role.objects.filter(code=UserRole.CANDIDATE).first()
-            if candidate_role:
-                AssignedRole.objects.get_or_create(user=user, role=candidate_role)
+            RoleAssignmentService.assign_role(user_pubkey=user.pubkey, role_code="CANDIDATE", assigned_by_pubkey=None)
         except IntegrityError as error:
             raise EmailAlreadyExistsException() from error
         return user

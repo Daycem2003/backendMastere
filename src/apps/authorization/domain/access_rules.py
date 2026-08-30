@@ -7,8 +7,8 @@ consulté à l'exécution pour vérifier une permission (voir
 selectors/authorization_selector.py qui lit toujours la base).
 """
 
-from src.apps.authorization.domain import roles as R
 from src.apps.authorization.domain import permissions as P
+from src.apps.authorization.domain import roles as R
 
 DEFAULT_ROLE_PERMISSIONS: dict[str, list[str]] = {
     R.CANDIDATE: [

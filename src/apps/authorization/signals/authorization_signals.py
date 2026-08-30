@@ -11,7 +11,7 @@ de notifications asynchrone), utiliser Celery (déjà présent dans le projet)
 plutôt que ce mécanisme.
 """
 
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 RoleAssignmentCallback = Callable[[str, str], Awaitable[None]]  # (user_pubkey, role_code)
 

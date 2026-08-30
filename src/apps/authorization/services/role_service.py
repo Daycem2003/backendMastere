@@ -1,11 +1,16 @@
 import uuid
 
 from asgiref.sync import sync_to_async
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from src.apps.authorization.domain.access_rules import DEFAULT_ROLE_PERMISSIONS
 from src.apps.authorization.domain.roles import BASE_ROLE_LABELS, BASE_ROLES
-from src.apps.authorization.exceptions.authorization_exceptions import CannotModifySystemRoleException, PermissionNotFoundException, RoleAlreadyExistsException, RoleNotFoundException
+from src.apps.authorization.exceptions.authorization_exceptions import (
+    CannotModifySystemRoleException,
+    PermissionNotFoundException,
+    RoleAlreadyExistsException,
+    RoleNotFoundException,
+)
 from src.apps.authorization.models import Permission, Role, RolePermission
 from src.apps.authorization.selectors import role_selector
 

@@ -9,7 +9,9 @@ from src.apps.authorization.exceptions.authorization_exceptions import (
     RoleNotFoundException,
 )
 from src.apps.authorization.models import Role, UserRole
-from src.apps.authorization.selectors.authorization_selector import invalidate_permission_cache
+from src.apps.authorization.selectors.authorization_selector import (
+    invalidate_permission_cache,
+)
 from src.apps.users.models import User
 from src.shared.exceptions.auth_exceptions import UserNotFoundException
 

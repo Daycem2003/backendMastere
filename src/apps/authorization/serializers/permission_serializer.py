@@ -1,5 +1,5 @@
-from src.apps.authorization.models import Permission
 from src.apps.authorization.dto.permission import PermissionResponseDTO
+from src.apps.authorization.models import Permission
 
 
 def serialize_permission(permission: Permission) -> PermissionResponseDTO:

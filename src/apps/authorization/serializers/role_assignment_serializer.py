@@ -1,5 +1,5 @@
-from src.apps.authorization.models import UserRole
 from src.apps.authorization.dto.role_assignment import RoleAssignmentResponseDTO
+from src.apps.authorization.models import UserRole
 
 
 def serialize_role_assignment(user_role: UserRole, user_pubkey: str) -> RoleAssignmentResponseDTO:

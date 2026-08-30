@@ -1,8 +1,11 @@
 import uuid
+
 from asgiref.sync import sync_to_async
 
 from src.apps.authorization.domain.permissions import PERMISSION_CATALOG
-from src.apps.authorization.exceptions.authorization_exceptions import PermissionNotFoundException
+from src.apps.authorization.exceptions.authorization_exceptions import (
+    PermissionNotFoundException,
+)
 from src.apps.authorization.models import Permission
 from src.apps.authorization.selectors import permission_selector
 

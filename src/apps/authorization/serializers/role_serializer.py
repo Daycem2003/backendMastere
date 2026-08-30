@@ -1,5 +1,5 @@
+from src.apps.authorization.dto.role import PermissionSummaryDTO, RoleResponseDTO
 from src.apps.authorization.models import Role
-from src.apps.authorization.dto.role import RoleResponseDTO, PermissionSummaryDTO
 
 
 def serialize_role(role: Role) -> RoleResponseDTO:
