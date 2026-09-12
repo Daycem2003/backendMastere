@@ -12,14 +12,14 @@ class JWTAuthentication(authentication.BaseAuthentication):
         if not header:
             return None
         if len(header) != 2 or header[0].decode().lower() != self.keyword.lower():
-            raise exceptions.AuthenticationFailed("Invalid authorization header.")
+            return None
         try:
             payload = JwtStrategy.validate_access_token(header[1].decode())
-        except Exception as error:
-            raise exceptions.AuthenticationFailed("Invalid access token.") from error
-        user = User.objects.filter(pubkey=payload["sub"], is_active=True).first()
+        except Exception:
+            return None
+        user = User.objects.filter(pubkey=payload.get("sub"), is_active=True).first()
         if not user:
-            raise exceptions.AuthenticationFailed("User not found or inactive.")
+            return None
         return user, None
 
     def authenticate_header(self, request):

@@ -11,6 +11,7 @@ from . import validate_dto
 
 
 class ActivateAccountView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):

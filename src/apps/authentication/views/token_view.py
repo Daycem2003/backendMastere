@@ -12,6 +12,7 @@ from . import auth_response, validate_dto
 
 
 class RefreshTokenView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):

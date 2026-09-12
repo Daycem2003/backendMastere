@@ -12,6 +12,7 @@ from . import auth_response, validate_dto
 
 
 class LoginView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -20,6 +21,7 @@ class LoginView(APIView):
 
 
 class IdNumberLoginView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -30,6 +32,7 @@ class IdNumberLoginView(APIView):
 
 
 class PhoneLoginView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
