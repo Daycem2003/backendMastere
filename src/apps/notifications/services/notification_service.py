@@ -84,7 +84,7 @@ class NotificationService:
             extra={
                 "notification_id": record.pk,
                 "candidate_profile_id": candidate.id,
-                "actor_id": actor.pk,
+                "actor_id": getattr(actor, "pk", None),
                 "motif": record.motif,
             },
         )

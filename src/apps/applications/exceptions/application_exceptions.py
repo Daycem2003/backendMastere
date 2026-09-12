@@ -21,6 +21,12 @@ class AlreadyApplied(ValidationError):
 class NotEligible(ValidationError):
     default_detail = "Vous ne remplissez pas les critères d'éligibilité pour ce master."
 
+    def __init__(self, detail: str | None = None, failed_criteria: list[dict] | None = None):
+        if failed_criteria:
+            super().__init__(detail={"detail": detail or self.default_detail, "failed_criteria": failed_criteria})
+        else:
+            super().__init__(detail=detail or self.default_detail)
+
 
 class MissingRequiredDocuments(ValidationError):
     default_detail = "Des documents requis sont manquants ou non encore approuvés."

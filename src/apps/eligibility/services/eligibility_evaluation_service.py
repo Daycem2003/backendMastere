@@ -47,8 +47,27 @@ class EligibilityService:
     def _licence_type_accepted(snapshot: CandidateSnapshot, master) -> bool:
         if snapshot.licence_type_code is None:
             return False
-        accepted_codes = set(master.type_licences_acceptees.values_list("pubkey", flat=True))
-        return snapshot.licence_type_code in accepted_codes
+        if hasattr(master, "type_licences_acceptees"):
+            tla = master.type_licences_acceptees
+            if hasattr(tla, "values_list"):
+                accepted_codes = set(tla.values_list("pubkey", flat=True))
+                if snapshot.licence_type_code in accepted_codes:
+                    return True
+                accepted_pks = set(str(pk) for pk in tla.values_list("pk", flat=True))
+                if str(snapshot.licence_type_code) in accepted_pks:
+                    return True
+            elif hasattr(tla, "filter"):
+                try:
+                    pk_val = int(snapshot.licence_type_code)
+                    if hasattr(tla.filter(pk=pk_val), "exists") and tla.filter(pk=pk_val).exists():
+                        return True
+                except (ValueError, TypeError, AttributeError):
+                    pass
+            elif hasattr(tla, "all"):
+                for t in tla.all():
+                    if getattr(t, "pubkey", None) == snapshot.licence_type_code or str(getattr(t, "pk", "")) == str(snapshot.licence_type_code):
+                        return True
+        return False
 
     @staticmethod
     def evaluate_rule(snapshot: CandidateSnapshot, criteria: EligibilityCriteria) -> FailedRule | None:

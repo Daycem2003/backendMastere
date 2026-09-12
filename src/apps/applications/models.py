@@ -32,6 +32,7 @@ class Application(models.Model):
     niveau = models.TextField()
     date_soumission = models.DateTimeField(auto_now_add=True, db_column="dateSoumission")
     score = models.FloatField(null=True, blank=True)
+    rang = models.IntegerField(null=True, blank=True, db_column="rang")
     statut = models.CharField(
         max_length=16, choices=ApplicationStatus.choices, default=ApplicationStatus.SOUMISE
     )

@@ -40,5 +40,5 @@ class ApplicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Application
-        fields = ("pubkey", "master", "candidate_profile", "niveau", "date_soumission", "score", "statut")
+        fields = ("pubkey", "master", "candidate_profile", "niveau", "date_soumission", "score", "rang", "statut")
         read_only_fields = fields

@@ -23,8 +23,16 @@ class EligibilityService:
     @staticmethod
     def is_eligible_via_licence(profile: CandidateProfile, master) -> bool:
         diplome = getattr(profile, "diplome", None)
-        if not diplome and hasattr(profile, "diplomes") and hasattr(profile.diplomes, "all"):
-            diplome = profile.diplomes.first()
+        if not diplome and hasattr(profile, "diplomes"):
+            d_attr = getattr(profile, "diplomes")
+            if hasattr(d_attr, "first"):
+                diplome = d_attr.first()
+            elif hasattr(d_attr, "all"):
+                res = d_attr.all()
+                if isinstance(res, (list, tuple)) and len(res) > 0:
+                    diplome = res[0]
+            elif isinstance(d_attr, (list, tuple)) and len(d_attr) > 0:
+                diplome = d_attr[0]
         if not diplome:
             return False
         tl_id = getattr(diplome, "type_licence_id", None)

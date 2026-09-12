@@ -16,10 +16,11 @@ from src.apps.applications.exceptions.application_exceptions import (
 from src.apps.applications.services.application_service import ApplicationService
 
 
-def _master(statut="OUVERT", pk=1, required_types=(), passerelles_depuis_ids=(), type_licences_ids=()):
+def _master(statut="OUVERT", pk=1, pubkey="mst_y", required_types=(), passerelles_depuis_ids=(), type_licences_ids=()):
     return SimpleNamespace(
         pk=pk,
         id=pk,
+        pubkey=pubkey,
         statut=statut,
         nom="Master IA",
         required_documents=SimpleNamespace(
@@ -28,7 +29,9 @@ def _master(statut="OUVERT", pk=1, required_types=(), passerelles_depuis_ids=(),
             )
         ),
         type_licences_acceptees=SimpleNamespace(
-            filter=lambda pk: SimpleNamespace(exists=lambda: pk in type_licences_ids)
+            filter=lambda pk: SimpleNamespace(exists=lambda: pk in type_licences_ids),
+            values_list=lambda field, flat: [str(i) for i in type_licences_ids],
+            all=lambda: [SimpleNamespace(intitule="Licence Test", pubkey=str(i), pk=i) for i in type_licences_ids],
         ),
         passerelles_depuis=SimpleNamespace(
             filter=lambda pk: SimpleNamespace(exists=lambda: pk in passerelles_depuis_ids)
@@ -36,8 +39,18 @@ def _master(statut="OUVERT", pk=1, required_types=(), passerelles_depuis_ids=(),
     )
 
 
-def _profile(pk=10, diplome=None, master1_year=None):
-    return SimpleNamespace(pk=pk, id=pk, pubkey="cand_1", user=SimpleNamespace(pk=999), diplome=diplome, master1_year=master1_year)
+def _profile(pk=10, diplome=None, master1_year=None, statut="VALIDE"):
+    return SimpleNamespace(
+        pk=pk,
+        id=pk,
+        pubkey="cand_1",
+        statut=statut,
+        user=SimpleNamespace(pk=999),
+        diplome=diplome,
+        diplomes=SimpleNamespace(all=lambda: [diplome] if diplome else []),
+        licence_years=SimpleNamespace(all=lambda: []),
+        master1_year=master1_year,
+    )
 
 
 def test_resolve_niveau_m2_via_passerelle_when_m1_linked_to_master_x():

@@ -8,6 +8,7 @@ from src.apps.applications.exceptions.application_exceptions import (
     AlreadyApplied,
     ApplicationAlreadyDecided,
     ApplicationNotWithdrawable,
+    CandidateProfileRequired,
     MasterNotFound,
     MasterNotOpen,
     MissingRequiredDocuments,
@@ -46,9 +47,27 @@ class ApplicationService:
         raise NotEligible()
 
     @staticmethod
+    def recalculate_ranks_for_master(master_id: int) -> None:
+        """Recalcule et met à jour le rang de toutes les candidatures actives
+        pour un Master donné, classées par score décroissant puis date de création."""
+        from django.db.models import F
+
+        applications = list(
+            Application.objects.filter(master_id=master_id, deleted_at__isnull=True).order_by(
+                F("score").desc(nulls_last=True), "created_at"
+            )
+        )
+        for index, app in enumerate(applications, start=1):
+            app.rang = index
+        Application.objects.bulk_update(applications, ["rang"])
+
+    @staticmethod
     @transaction.atomic
     def submit(profile: CandidateProfile, dto: SubmitApplicationDTO) -> Application:
         from src.apps.masters.models import Master, MasterStatus  # import tardif, évite le couplage au chargement
+
+        if getattr(profile, "statut", None) != "VALIDE":
+            raise CandidateProfileRequired("Votre profil candidat doit être validé par la commission avant de pouvoir postuler.")
 
         master = Master.objects.select_for_update().filter(
             pubkey=dto.master_pubkey, deleted_at__isnull=True
@@ -61,6 +80,37 @@ class ApplicationService:
             raise AlreadyApplied()
 
         niveau = ApplicationService._resolve_niveau(profile, master)
+
+        # Vérification d'éligibilité complète via le moteur de règles d'éligibilité
+        from src.apps.eligibility.services.candidate_snapshot_resolver import build_snapshot_from_candidate_profile
+        from src.apps.eligibility.services.eligibility_evaluation_service import EligibilityService as EligibilityRuleEngine
+
+        snapshot = build_snapshot_from_candidate_profile(profile, master)
+        eval_result = EligibilityRuleEngine.evaluate(snapshot, master)
+        if not eval_result.eligible:
+            failed_descriptions = []
+            failed_criteria = []
+            for r in eval_result.failed_rules:
+                if r.criterion == "average":
+                    desc = f"Moyenne minimale de Licence requise : {r.expected} (votre moyenne : {r.actual})"
+                elif r.criterion == "nationality":
+                    desc = f"Nationalité requise : {r.expected} (votre nationalité : {r.actual})"
+                elif r.criterion == "licence_type":
+                    desc = f"Type de licence requis : {r.expected} (votre licence : {r.actual})"
+                else:
+                    desc = f"Critère '{r.criterion}' non satisfait : {r.reason} (Attendu : {r.expected}, Actuel : {r.actual})"
+                failed_descriptions.append(desc)
+                failed_criteria.append({
+                    "criterion": r.criterion,
+                    "expected": r.expected,
+                    "actual": r.actual,
+                    "reason": r.reason,
+                    "description": desc,
+                })
+            raise NotEligible(
+                detail=f"Candidat inéligible pour ce Master : {'; '.join(failed_descriptions)}",
+                failed_criteria=failed_criteria,
+            )
 
         required_types = list(
             master.required_documents.filter(deleted_at__isnull=True).values_list("type", flat=True)
@@ -84,6 +134,10 @@ class ApplicationService:
             score=score,
         )
 
+        # Recalculer le rang de toutes les candidatures pour ce Master
+        ApplicationService.recalculate_ranks_for_master(master.id)
+        application.refresh_from_db()
+
         NotificationService.notify_document_issue(
             NotifyDocumentIssueDTO(
                 candidate_profile_pubkey=profile.pubkey,
@@ -98,7 +152,7 @@ class ApplicationService:
 
         logger.info(
             "application_submitted",
-            extra={"application_id": application.pk, "candidate_profile_id": profile.id, "master_id": master.id},
+            extra={"application_id": application.pk, "candidate_profile_id": profile.id, "master_id": master.id, "rang": application.rang},
         )
         return application
 
