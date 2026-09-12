@@ -13,7 +13,11 @@ from src.apps.candidate_profile.exceptions.candidate_profile_exceptions import (
 )
 from src.apps.candidate_profile.permissions.candidate_profile_permissions import CanViewAnyProfile
 from src.apps.candidate_profile.policies.candidate_profile_policy import CandidateProfilePolicy
-from src.apps.candidate_profile.selectors.candidate_profile_selector import get_by_pubkey, get_by_user
+from src.apps.candidate_profile.selectors.candidate_profile_selector import (
+    get_by_pubkey,
+    get_by_user,
+    list_candidate_profiles,
+)
 from src.apps.candidate_profile.serializers.candidate_profile import (
     CandidateProfileSerializer,
     CreateCandidateProfileSerializer,
@@ -89,3 +93,15 @@ class CandidateProfileDetailView(APIView):
         if not CandidateProfilePolicy.can_view(request.user, profile):
             raise ProfileAccessForbidden()
         return Response(CandidateProfileSerializer(profile).data)
+
+
+class CandidateProfileListView(APIView):
+    """Consultation de la liste des candidatures par un coordinateur ou administrateur."""
+
+    permission_classes = [CanViewAnyProfile]
+
+    def get(self, request):
+        statut = request.query_params.get("statut")
+        q = request.query_params.get("q")
+        profiles = list_candidate_profiles(statut=statut, q=q)
+        return Response(CandidateProfileSerializer(profiles, many=True).data)

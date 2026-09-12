@@ -17,11 +17,12 @@ class CanViewAnyProfile(BasePermission):
     candidature)."""
 
     def has_permission(self, request, view) -> bool:
+        user = request.user
+        if not (user and user.is_authenticated):
+            return False
         return bool(
-            request.user
-            and request.user.is_authenticated
-            and (
-                AuthorizationService.has_role(request.user.pubkey, "COORDINATOR")
-                or AuthorizationService.has_role(request.user.pubkey, "ADMIN")
-            )
+            getattr(user, "coordinateur", None) is not None
+            or getattr(user, "administrateur", None) is not None
+            or AuthorizationService.has_role(user.pubkey, "COORDINATOR")
+            or AuthorizationService.has_role(user.pubkey, "ADMIN")
         )

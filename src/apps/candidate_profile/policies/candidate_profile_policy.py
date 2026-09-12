@@ -5,10 +5,13 @@ from src.apps.candidate_profile.models import CandidateStatus
 class CandidateProfilePolicy:
     @staticmethod
     def can_view(user, profile) -> bool:
-        if profile.user_id == user.pk:
+        if profile.user_id and profile.user_id == user.pk:
             return True
-        return AuthorizationService.has_role(user.pubkey, "ADMIN") or AuthorizationService.has_role(
-            user.pubkey, "COORDINATOR"
+        return bool(
+            getattr(user, "coordinateur", None) is not None
+            or getattr(user, "administrateur", None) is not None
+            or AuthorizationService.has_role(user.pubkey, "ADMIN")
+            or AuthorizationService.has_role(user.pubkey, "COORDINATOR")
         )
 
     @staticmethod

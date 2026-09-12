@@ -135,7 +135,7 @@ class CandidateDocumentsListView(APIView):
         versions = list_candidate_versions(candidate_pubkey)
         return Response(
             DocumentVersionSerializer(
-                versions, many=True, context={"storage": get_budgeted_storage()}
+                versions, many=True, context={"storage": get_budgeted_storage(), "include_download_url": True}
             ).data
         )
 

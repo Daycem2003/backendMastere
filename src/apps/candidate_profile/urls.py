@@ -9,11 +9,13 @@ from .views.academic_record_views import (
 )
 from .views.candidate_profile_views import (
     CandidateProfileDetailView,
+    CandidateProfileListView,
     MyCandidateProfileView,
     NationalityListView,
 )
 
 urlpatterns = [
+    path("", CandidateProfileListView.as_view(), name="candidate-profile-list"),
     path("me", MyCandidateProfileView.as_view()),
     path("nationalities", NationalityListView.as_view()),
     path("me/licence-years", LicenceYearListView.as_view()),

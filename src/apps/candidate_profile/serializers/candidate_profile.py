@@ -111,6 +111,6 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
         fields = (
             "pubkey", "nom", "prenom", "cin", "email", "telephone", "ville",
             "annee_naissance", "statut", "diplomes", "master1_year",
-            "redoublement", "licence_years", "nationalite"
+            "redoublement", "licence_years", "nationalite", "created_at"
         )
         read_only_fields = fields

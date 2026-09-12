@@ -1,12 +1,39 @@
+from django.db.models import Q
+
 from src.apps.candidate_profile.models import CandidateProfile, TypeLicence
+
+
+def list_candidate_profiles(statut: str | None = None, q: str | None = None):
+    qs = (
+        CandidateProfile.objects.select_related(
+            "master1_year", "master1_year__master", "redoublement"
+        )
+        .prefetch_related("diplomes", "diplomes__type_licence", "licence_years", "licence_years__type_licence", "redoublement__redoublement_years")
+        .filter(deleted_at__isnull=True)
+    )
+
+    if statut and statut.strip() and statut.upper() != "TOUS":
+        qs = qs.filter(statut=statut.strip().upper())
+
+    if q and q.strip():
+        search = q.strip()
+        qs = qs.filter(
+            Q(nom__icontains=search)
+            | Q(prenom__icontains=search)
+            | Q(cin__icontains=search)
+            | Q(email__icontains=search)
+            | Q(ville__icontains=search)
+        )
+
+    return qs.order_by("-created_at")
 
 
 def get_by_pubkey(pubkey: str) -> CandidateProfile | None:
     return (
         CandidateProfile.objects.select_related(
-            "diplome", "diplome__type_licence", "master1_year", "master1_year__master", "redoublement"
+            "master1_year", "master1_year__master", "redoublement"
         )
-        .prefetch_related("licence_years", "redoublement__redoublement_years")
+        .prefetch_related("diplomes", "diplomes__type_licence", "licence_years", "licence_years__type_licence", "redoublement__redoublement_years")
         .filter(pubkey=pubkey, deleted_at__isnull=True)
         .first()
     )
