@@ -22,25 +22,76 @@ class EligibilityService:
 
     @staticmethod
     def is_eligible_via_licence(profile: CandidateProfile, master) -> bool:
-        diplome = getattr(profile, "diplome", None)
-        if not diplome and hasattr(profile, "diplomes"):
+        diplomes = []
+        if hasattr(profile, "diplomes"):
             d_attr = getattr(profile, "diplomes")
-            if hasattr(d_attr, "first"):
-                diplome = d_attr.first()
-            elif hasattr(d_attr, "all"):
+            if hasattr(d_attr, "all"):
                 res = d_attr.all()
-                if isinstance(res, (list, tuple)) and len(res) > 0:
-                    diplome = res[0]
-            elif isinstance(d_attr, (list, tuple)) and len(d_attr) > 0:
-                diplome = d_attr[0]
-        if not diplome:
+                diplomes = list(res) if isinstance(res, (list, tuple)) else list(res.all())
+            elif isinstance(d_attr, (list, tuple)):
+                diplomes = list(d_attr)
+        if not diplomes and getattr(profile, "diplome", None):
+            diplomes = [profile.diplome]
+
+        if not diplomes:
             return False
-        tl_id = getattr(diplome, "type_licence_id", None)
-        if tl_id is None and getattr(diplome, "type_licence", None):
-            tl_id = getattr(diplome.type_licence, "pk", None) or getattr(diplome.type_licence, "id", None)
-        if tl_id is None:
-            return False
-        return bool(master.type_licences_acceptees.filter(pk=tl_id).exists())
+
+        if not hasattr(master, "type_licences_acceptees"):
+            return True
+        tla = master.type_licences_acceptees
+        if hasattr(tla, "exists") and not tla.exists():
+            return True
+        if hasattr(tla, "count") and tla.count() == 0:
+            return True
+        if hasattr(tla, "all"):
+            all_tla = list(tla.all())
+            if not all_tla:
+                return True
+
+        accepted_pks = set()
+        accepted_pubkeys = set()
+        if hasattr(tla, "values_list"):
+            for v in tla.values_list("pk", flat=True):
+                accepted_pks.add(v)
+                accepted_pks.add(str(v))
+                try:
+                    accepted_pks.add(int(v))
+                except (ValueError, TypeError):
+                    pass
+            for v in tla.values_list("pubkey", flat=True):
+                accepted_pubkeys.add(str(v))
+        if hasattr(tla, "all"):
+            for t in tla.all():
+                pk_val = getattr(t, "pk", getattr(t, "id", None))
+                if pk_val is not None:
+                    accepted_pks.add(pk_val)
+                    accepted_pks.add(str(pk_val))
+                    try:
+                        accepted_pks.add(int(pk_val))
+                    except (ValueError, TypeError):
+                        pass
+                pubkey_val = getattr(t, "pubkey", None)
+                if pubkey_val:
+                    accepted_pubkeys.add(str(pubkey_val))
+
+        for d in diplomes:
+            tl_id = getattr(d, "type_licence_id", None)
+            if tl_id is None and getattr(d, "type_licence", None):
+                tl_id = getattr(d.type_licence, "pk", getattr(d.type_licence, "id", None))
+            tl_pubkey = getattr(d.type_licence, "pubkey", None) if getattr(d, "type_licence", None) else None
+
+            if tl_id is not None and (tl_id in accepted_pks or str(tl_id) in accepted_pks):
+                return True
+            if tl_pubkey and str(tl_pubkey) in accepted_pubkeys:
+                return True
+            if hasattr(tla, "filter"):
+                try:
+                    if tl_id is not None and tla.filter(pk=tl_id).exists():
+                        return True
+                except Exception:
+                    pass
+
+        return False
 
     @staticmethod
     def is_eligible_via_passerelle(profile: CandidateProfile, master) -> bool:

@@ -29,14 +29,12 @@ logger = logging.getLogger(__name__)
 class ApplicationService:
     @staticmethod
     def _resolve_niveau(profile: CandidateProfile, master) -> str:
-        """Détermine à quel niveau le candidat postule, en réutilisant
-        `EligibilityService` (module `candidate_profile`) plutôt qu'en
-        dupliquant la logique d'éligibilité ici :
-
+        """Détermine à quel niveau le candidat postule :
         - éligible via le diplôme de licence -> candidature classique "M1".
         - pas de diplôme éligible mais un Master1Year validé (passerelle,
           y compris via un M1 fait hors plateforme, à valider manuellement
           par un coordinateur) -> candidature "M2".
+        - sinon -> NotEligible.
         """
         if EligibilityService.is_eligible_via_licence(profile, master):
             return "M1"

@@ -103,6 +103,6 @@ class CheckCandidateEligibilityView(APIView):
         if not profile:
             raise CandidateProfileNotFound()
 
-        snapshot = build_snapshot_from_candidate_profile(profile)
+        snapshot = build_snapshot_from_candidate_profile(profile, master)
         result = EligibilityService.evaluate(snapshot, master)
         return Response(EligibilityResultSerializer.from_result(result))

@@ -13,6 +13,7 @@ from src.apps.users.dto.user import CreateUserIdentityDTO
 from src.apps.users.services.user_provisioning_service import UserProvisioningService
 
 
+@pytest.mark.django_db
 @patch("src.apps.authorization.services.role_assignment_service.RoleAssignmentService")
 @patch("src.apps.users.services.user_provisioning_service.UserService")
 def test_create_user_with_role_calls_both_steps_in_order(mock_user_service, mock_role_service):

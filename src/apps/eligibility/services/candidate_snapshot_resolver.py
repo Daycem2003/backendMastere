@@ -19,11 +19,17 @@ def build_snapshot_from_candidate_profile(profile, master=None) -> CandidateSnap
     matching_diplome = None
     if master and hasattr(master, "type_licences_acceptees"):
         accepted_pubkeys = set(master.type_licences_acceptees.values_list("pubkey", flat=True)) if hasattr(master.type_licences_acceptees, "values_list") else set()
+        accepted_pks = set(str(pk) for pk in master.type_licences_acceptees.values_list("pk", flat=True)) if hasattr(master.type_licences_acceptees, "values_list") else set()
         for d in diplomes:
             tl = getattr(d, "type_licence", None)
-            if tl and getattr(tl, "pubkey", None) in accepted_pubkeys:
-                matching_diplome = d
-                break
+            if tl:
+                if (
+                    getattr(tl, "pubkey", None) in accepted_pubkeys
+                    or str(getattr(tl, "pk", "")) in accepted_pks
+                    or str(getattr(tl, "id", "")) in accepted_pks
+                ):
+                    matching_diplome = d
+                    break
 
     diplome = matching_diplome or (diplomes[0] if diplomes else None)
     redoublement = getattr(profile, "redoublement", None)
@@ -49,6 +55,8 @@ def build_snapshot_from_candidate_profile(profile, master=None) -> CandidateSnap
 
 
 def _calculate_average(profile, diplome=None) -> float | None:
+    if not hasattr(profile, "licence_years"):
+        return None
     years = list(profile.licence_years.all())
     if not years:
         return None
@@ -61,4 +69,7 @@ def _calculate_average(profile, diplome=None) -> float | None:
         ]
         if filtered:
             years = filtered
-    return round(sum(float(y.moyenne) for y in years) / len(years), 2)
+    valid_years = [y for y in years if getattr(y, "moyenne", None) is not None]
+    if not valid_years:
+        return None
+    return round(sum(float(y.moyenne) for y in valid_years) / len(valid_years), 2)

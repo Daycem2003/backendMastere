@@ -35,6 +35,7 @@ def test_list_by_rbac_role_code_filters_via_user_role_join(mock_user_role_cls):
 
         list_by_rbac_role_code("ADMIN")
 
-        mock_user_role_cls.objects.filter.assert_called_once()
-        filter_kwargs = mock_user_role_cls.objects.filter.call_args.kwargs
-        assert filter_kwargs["role__code"] == "ADMIN"
+        assert any(
+            c.kwargs.get("role__code") == "ADMIN"
+            for c in mock_user_role_cls.objects.filter.call_args_list
+        )

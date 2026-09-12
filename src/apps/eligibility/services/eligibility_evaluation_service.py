@@ -10,6 +10,19 @@ from src.apps.eligibility.selectors.eligibility_selector import list_for_master
 logger = logging.getLogger(__name__)
 
 
+def _normalize_string(val: str | None) -> str:
+    if val is None:
+        return ""
+    normalized = str(val).strip().lower()
+    nationality_map = {
+        "tunisienne": "tunisienne",
+        "tunisien": "tunisienne",
+        "tunisie": "tunisienne",
+        "tn": "tunisienne",
+    }
+    return nationality_map.get(normalized, normalized)
+
+
 class EligibilityService:
     """Moteur générique d'évaluation. Chaque `evaluate_*` est pur (aucun
     accès DB, aucun effet de bord) — testable indépendamment de l'ORM,
@@ -45,28 +58,32 @@ class EligibilityService:
 
     @staticmethod
     def _licence_type_accepted(snapshot: CandidateSnapshot, master) -> bool:
+        if not hasattr(master, "type_licences_acceptees"):
+            return True
+        tla = master.type_licences_acceptees
+        if hasattr(tla, "exists") and not tla.exists():
+            return True
+        if hasattr(tla, "count") and tla.count() == 0:
+            return True
+        if hasattr(tla, "all"):
+            all_tla = list(tla.all())
+            if not all_tla:
+                return True
+
         if snapshot.licence_type_code is None:
             return False
-        if hasattr(master, "type_licences_acceptees"):
-            tla = master.type_licences_acceptees
-            if hasattr(tla, "values_list"):
-                accepted_codes = set(tla.values_list("pubkey", flat=True))
-                if snapshot.licence_type_code in accepted_codes:
+
+        if hasattr(tla, "values_list"):
+            accepted_codes = set(tla.values_list("pubkey", flat=True))
+            if snapshot.licence_type_code in accepted_codes:
+                return True
+            accepted_pks = set(str(pk) for pk in tla.values_list("pk", flat=True))
+            if str(snapshot.licence_type_code) in accepted_pks:
+                return True
+        if hasattr(tla, "all"):
+            for t in tla.all():
+                if getattr(t, "pubkey", None) == snapshot.licence_type_code or str(getattr(t, "pk", "")) == str(snapshot.licence_type_code):
                     return True
-                accepted_pks = set(str(pk) for pk in tla.values_list("pk", flat=True))
-                if str(snapshot.licence_type_code) in accepted_pks:
-                    return True
-            elif hasattr(tla, "filter"):
-                try:
-                    pk_val = int(snapshot.licence_type_code)
-                    if hasattr(tla.filter(pk=pk_val), "exists") and tla.filter(pk=pk_val).exists():
-                        return True
-                except (ValueError, TypeError, AttributeError):
-                    pass
-            elif hasattr(tla, "all"):
-                for t in tla.all():
-                    if getattr(t, "pubkey", None) == snapshot.licence_type_code or str(getattr(t, "pk", "")) == str(snapshot.licence_type_code):
-                        return True
         return False
 
     @staticmethod
@@ -113,25 +130,48 @@ class EligibilityService:
 
     @staticmethod
     def evaluate_numeric(actual: float, rule) -> bool:
+        try:
+            act = float(actual)
+            exp = float(rule.value)
+        except (ValueError, TypeError):
+            return False
+
+        eps = 1e-5
         ops = {
-            Operator.EQ: lambda a, b: a == b,
-            Operator.NEQ: lambda a, b: a != b,
-            Operator.GT: lambda a, b: a > b,
-            Operator.GTE: lambda a, b: a >= b,
-            Operator.LT: lambda a, b: a < b,
-            Operator.LTE: lambda a, b: a <= b,
+            Operator.EQ: lambda a, b: abs(a - b) < eps,
+            Operator.NEQ: lambda a, b: abs(a - b) >= eps,
+            Operator.GT: lambda a, b: a > (b + eps),
+            Operator.GTE: lambda a, b: a >= (b - eps),
+            Operator.LT: lambda a, b: a < (b - eps),
+            Operator.LTE: lambda a, b: a <= (b + eps),
         }
-        return ops[rule.operator](actual, rule.value)
+        if rule.operator not in ops:
+            return False
+        return ops[rule.operator](act, exp)
 
     @staticmethod
     def evaluate_numeric_range(actual: float, rule) -> bool:
+        try:
+            act = float(actual)
+        except (ValueError, TypeError):
+            return False
+
+        eps = 1e-5
         if rule.min_value is not None:
-            min_ok = actual >= rule.min_value if rule.min_inclusive else actual > rule.min_value
-            if not min_ok:
+            try:
+                min_val = float(rule.min_value)
+                min_ok = act >= (min_val - eps) if rule.min_inclusive else act > (min_val + eps)
+                if not min_ok:
+                    return False
+            except (ValueError, TypeError):
                 return False
         if rule.max_value is not None:
-            max_ok = actual <= rule.max_value if rule.max_inclusive else actual < rule.max_value
-            if not max_ok:
+            try:
+                max_val = float(rule.max_value)
+                max_ok = act <= (max_val + eps) if rule.max_inclusive else act < (max_val - eps)
+                if not max_ok:
+                    return False
+            except (ValueError, TypeError):
                 return False
         return True
 
@@ -167,14 +207,17 @@ class EligibilityService:
         """Sert aussi ENUM (même logique : égalité ou appartenance à une
         liste) et couvre nationalité / nom d'université de la spec, sans
         colonne dédiée par type de critère."""
+        norm_actual = _normalize_string(actual)
         if rule.operator == Operator.EQ:
-            return actual == rule.value
+            return norm_actual == _normalize_string(rule.value)
         if rule.operator == Operator.NEQ:
-            return actual != rule.value
+            return norm_actual != _normalize_string(rule.value)
         if rule.operator == Operator.IN:
-            return actual in (rule.values or [])
+            norm_values = [_normalize_string(v) for v in (rule.values or [])]
+            return norm_actual in norm_values
         if rule.operator == Operator.NOT_IN:
-            return actual not in (rule.values or [])
+            norm_values = [_normalize_string(v) for v in (rule.values or [])]
+            return norm_actual not in norm_values
         return False
 
     @staticmethod

@@ -76,7 +76,7 @@ class MasterDetailView(APIView):
         master = get_by_pubkey(pubkey)
         if not master:
             raise MasterNotFound()
-        user = request.user if request.user.is_authenticated else None
+        user = request.user if (request.user and getattr(request.user, "is_authenticated", False)) else None
         if not MasterPolicy.can_view(user, master):
             raise MasterAccessForbidden()
         return Response(MasterSerializer(master).data)

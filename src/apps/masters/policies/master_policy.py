@@ -8,21 +8,23 @@ class MasterPolicy:
         """Un master OUVERT est visible publiquement (y compris anonyme,
         `user=None`) — un BROUILLON/FERME n'est visible que par son
         coordinateur ou un admin."""
-        if master.statut == MasterStatus.OUVERT:
+        if getattr(master, "statut", None) == MasterStatus.OUVERT:
             return True
-        if user is None or not user.is_authenticated:
+        if user is None or not getattr(user, "is_authenticated", False):
             return False
-        if AuthorizationService.has_role(user.pubkey, "ADMIN"):
+        if getattr(user, "pubkey", None) and AuthorizationService.has_role(user.pubkey, "ADMIN"):
             return True
         coordinateur = getattr(user, "coordinateur", None)
-        return bool(coordinateur and master.coordinateur_id == coordinateur.id)
+        return bool(coordinateur and getattr(coordinateur, "id", None) == master.coordinateur_id)
 
     @staticmethod
     def can_edit(user, master) -> bool:
-        if AuthorizationService.has_role(user.pubkey, "ADMIN"):
+        if user is None or not getattr(user, "is_authenticated", False):
+            return False
+        if getattr(user, "pubkey", None) and AuthorizationService.has_role(user.pubkey, "ADMIN"):
             return True
         coordinateur = getattr(user, "coordinateur", None)
-        return bool(coordinateur and master.coordinateur_id == coordinateur.id)
+        return bool(coordinateur and getattr(coordinateur, "id", None) == master.coordinateur_id)
 
     @staticmethod
     def can_publish(user, master) -> bool:
