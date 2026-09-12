@@ -24,6 +24,8 @@ class ApplicationMasterSummarySerializer(serializers.Serializer):
     pubkey = serializers.CharField()
     nom = serializers.CharField()
     universite = serializers.CharField()
+    domaine = serializers.CharField(required=False, allow_null=True)
+    nombre_places = serializers.IntegerField(required=False, allow_null=True)
 
 
 class ApplicationCandidateSummarySerializer(serializers.Serializer):
@@ -32,6 +34,8 @@ class ApplicationCandidateSummarySerializer(serializers.Serializer):
     prenom = serializers.CharField()
     cin = serializers.CharField()
     email = serializers.CharField()
+    telephone = serializers.CharField(required=False, allow_null=True)
+    ville = serializers.CharField(required=False, allow_null=True)
 
 
 class ApplicationSerializer(serializers.ModelSerializer):

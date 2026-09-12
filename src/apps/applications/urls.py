@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views.application_views import (
+    AllApplicationListView,
     ApplicationDetailView,
     DecideApplicationView,
     MyApplicationListView,
@@ -10,7 +11,9 @@ from .views.application_views import (
 from .views.review_views import MasterApplicationListView
 
 urlpatterns = [
-    path("", SubmitApplicationView.as_view()),
+    path("", AllApplicationListView.as_view()),
+    path("all", AllApplicationListView.as_view()),
+    path("all/", AllApplicationListView.as_view()),
     path("submit", SubmitApplicationView.as_view()),
     path("submit/", SubmitApplicationView.as_view()),
     path("me", MyApplicationListView.as_view()),

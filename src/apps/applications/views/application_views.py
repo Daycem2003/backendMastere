@@ -11,7 +11,11 @@ from src.apps.applications.exceptions.application_exceptions import (
 )
 from src.apps.applications.permissions.application_permissions import CanReviewApplications
 from src.apps.applications.policies.application_policy import ApplicationPolicy
-from src.apps.applications.selectors.application_selector import get_by_pubkey, list_for_candidate
+from src.apps.applications.selectors.application_selector import (
+    get_by_pubkey,
+    list_all,
+    list_for_candidate,
+)
 from src.apps.applications.serializers.application import (
     ApplicationSerializer,
     DecisionSerializer,
@@ -26,6 +30,19 @@ def _require_profile(request):
     if not profile:
         raise CandidateProfileRequired()
     return profile
+
+
+class AllApplicationListView(APIView):
+    """Liste de toutes les candidatures pour l'administrateur ou le coordinateur."""
+
+    permission_classes = [CanReviewApplications]
+
+    def get(self, request):
+        statut = request.query_params.get("statut")
+        master_pubkey = request.query_params.get("master_pubkey") or request.query_params.get("master")
+        q = request.query_params.get("q")
+        applications = list_all(statut=statut, master_pubkey=master_pubkey, q=q)
+        return Response(ApplicationSerializer(applications, many=True).data)
 
 
 class SubmitApplicationView(APIView):
@@ -94,3 +111,4 @@ class DecideApplicationView(APIView):
         dto = DecisionDTO(**serializer.validated_data)
         application = ApplicationService.decide(application, dto, request.user)
         return Response(ApplicationSerializer(application).data)
+
