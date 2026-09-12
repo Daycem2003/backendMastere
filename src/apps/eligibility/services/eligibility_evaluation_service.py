@@ -44,7 +44,7 @@ class EligibilityService:
                     expected=", ".join(
                         t.intitule for t in master.type_licences_acceptees.all()
                     ) or "(aucun type accepté configuré)",
-                    actual=snapshot.licence_type_code or "(non renseigné)",
+                    actual=snapshot.licence_type_name or snapshot.licence_type_code or "(non renseigné)",
                     reason="Le type de licence du candidat n'est pas accepté par ce master.",
                 )
             )

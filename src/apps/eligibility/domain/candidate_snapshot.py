@@ -10,6 +10,7 @@ class CandidateSnapshot(BaseModel):
     donnée n'a pas été soumise par le candidat, pas qu'elle vaut 0/faux."""
 
     licence_type_code: str | None = None
+    licence_type_name: str | None = None
     average: float | None = None
     repeated_years: int | None = None
     nationality: str | None = None

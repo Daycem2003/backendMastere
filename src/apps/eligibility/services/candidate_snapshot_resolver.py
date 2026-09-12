@@ -36,11 +36,13 @@ def build_snapshot_from_candidate_profile(profile, master=None) -> CandidateSnap
 
     tl = getattr(diplome, "type_licence", None) if diplome else None
     licence_type_code = getattr(tl, "pubkey", None) if tl else None
+    licence_type_name = getattr(tl, "intitule", None) if tl else None
     if not licence_type_code and diplome and getattr(diplome, "type_licence_id", None):
         licence_type_code = str(diplome.type_licence_id)
 
     return CandidateSnapshot(
         licence_type_code=licence_type_code,
+        licence_type_name=licence_type_name,
         average=_calculate_average(profile, diplome),
         repeated_years=(
             redoublement.redoublement_years.count()

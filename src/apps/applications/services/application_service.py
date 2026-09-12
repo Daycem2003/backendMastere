@@ -30,19 +30,17 @@ class ApplicationService:
     @staticmethod
     def _resolve_niveau(profile: CandidateProfile, master) -> str:
         """Détermine à quel niveau le candidat postule :
-        - éligible via le diplôme de licence -> candidature classique "M1".
-        - pas de diplôme éligible mais un Master1Year validé (passerelle,
-          y compris via un M1 fait hors plateforme, à valider manuellement
-          par un coordinateur) -> candidature "M2".
-        - sinon -> NotEligible.
+        - Candidat avec passerelle M1 -> M2
+        - Sinon parcours Licence classique -> M1
+        L'éligibilité complète (diplômes, type de licence, moyenne, nationalité, etc.)
+        est vérifiée de manière exhaustive par le moteur de règles d'éligibilité
+        (EligibilityRuleEngine.evaluate) dans `submit()`.
         """
-        if EligibilityService.is_eligible_via_licence(profile, master):
-            return "M1"
         if EligibilityService.is_eligible_via_passerelle(profile, master) or (
             EligibilityService.requires_manual_review(profile)
         ):
             return "M2"
-        raise NotEligible()
+        return "M1"
 
     @staticmethod
     def recalculate_ranks_for_master(master_id: int) -> None:

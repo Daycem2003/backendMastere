@@ -78,12 +78,11 @@ def test_resolve_niveau_m2_when_m1_done_externally_pending_manual_review():
     assert niveau == "M2"
 
 
-def test_resolve_niveau_not_eligible_without_diplome_or_m1():
+def test_resolve_niveau_defaults_to_m1_for_standard_candidates():
     profile = _profile(diplome=None, master1_year=None)
     master_y = _master()
 
-    with pytest.raises(NotEligible):
-        ApplicationService._resolve_niveau(profile, master_y)
+    assert ApplicationService._resolve_niveau(profile, master_y) == "M1"
 
 
 def test_resolve_niveau_m1_when_diplome_type_licence_accepted():
