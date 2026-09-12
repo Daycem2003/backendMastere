@@ -99,6 +99,7 @@ class DocumentSlot(TimestampedSoftDeleteModel):
     annee_licence = models.CharField(max_length=2, choices=AnneeLicence.choices, default=AnneeLicence.NA, blank=True)
     redoublement_annee = models.TextField(default="", blank=True)
     justificatif_index = models.PositiveIntegerField(default=0)
+    a_redeposer = models.BooleanField(default=False, db_column="aRedeposer")
 
     class Meta:
         db_table = "DOCUMENT_SLOTS"

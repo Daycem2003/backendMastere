@@ -36,9 +36,15 @@ class TypeLicenceSerializer(serializers.ModelSerializer):
 
 
 class LicenceYearSerializer(serializers.ModelSerializer):
+    type_licence_pubkey = serializers.CharField(
+        source="type_licence.pubkey",
+        default=None,
+        read_only=True,
+    )
+
     class Meta:
         model = LicenceYear
-        fields = ("pubkey", "annee", "annee_universitaire", "moyenne")
+        fields = ("pubkey", "annee", "annee_universitaire", "moyenne", "type_licence_pubkey")
         read_only_fields = fields
 
 
@@ -105,12 +111,64 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
     master1_year = Master1YearSerializer(read_only=True)
     redoublement = RedoublementSerializer(read_only=True)
     licence_years = LicenceYearSerializer(many=True, read_only=True)
+    revision_message = serializers.CharField(
+        source="latest_revision_message", allow_null=True, read_only=True, default=None
+    )
+    documents = serializers.SerializerMethodField()
 
     class Meta:
         model = CandidateProfile
         fields = (
-            "pubkey", "nom", "prenom", "cin", "email", "telephone", "ville",
-            "annee_naissance", "statut", "diplomes", "master1_year",
-            "redoublement", "licence_years", "nationalite", "created_at"
+            "pubkey",
+            "nom",
+            "prenom",
+            "cin",
+            "email",
+            "telephone",
+            "ville",
+            "annee_naissance",
+            "statut",
+            "diplomes",
+            "master1_year",
+            "redoublement",
+            "licence_years",
+            "nationalite",
+            "revision_message",
+            "documents",
+            "created_at",
         )
         read_only_fields = fields
+
+    def get_documents(self, obj):
+        from src.apps.documents.serializers.document import format_slot_display_name
+
+        results = []
+        slots = obj.document_slots.filter(deleted_at__isnull=True) if hasattr(obj, "document_slots") else []
+        for slot in slots:
+            active_version = next(
+                (v for v in slot.versions.all() if v.is_active and v.deleted_at is None),
+                None,
+            )
+            display_name = format_slot_display_name(
+                slot.type,
+                slot.domaine,
+                slot.annee_licence,
+                slot.redoublement_annee,
+                slot.justificatif_index,
+            )
+            results.append(
+                {
+                    "slot_pubkey": slot.pubkey,
+                    "version_pubkey": active_version.pubkey if active_version else None,
+                    "slot_type": slot.type,
+                    "domaine": slot.domaine,
+                    "annee_licence": slot.annee_licence,
+                    "redoublement_annee": slot.redoublement_annee,
+                    "justificatif_index": slot.justificatif_index,
+                    "display_name": display_name,
+                    "a_redeposer": slot.a_redeposer,
+                    "status": active_version.status if active_version else None,
+                    "rejection_reason": active_version.rejection_reason if active_version else None,
+                }
+            )
+        return results

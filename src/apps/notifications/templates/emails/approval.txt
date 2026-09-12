@@ -1,0 +1,9 @@
+Bonjour {{ candidate_name }},
+
+Nous avons le plaisir de vous informer que votre dossier de candidature a été approuvé par l'équipe de coordination.
+
+Pour activer votre compte et définir votre mot de passe, veuillez cliquer sur le lien suivant (valable 48h) :
+{{ activation_link }}
+
+Cordialement,
+L'équipe de coordination des Mastères

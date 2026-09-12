@@ -20,11 +20,13 @@ def _require_candidate_profile(request):
     from src.apps.notifications.exceptions.notification_exceptions import (
         CandidateProfileNotFound,
     )
+    from src.apps.candidate_profile.selectors.candidate_profile_selector import get_by_user
 
-    profile = getattr(request.user, "candidate_profile", None)
+    profile = get_by_user(request.user)
     if profile is None:
         raise CandidateProfileNotFound()
     return profile
+
 
 
 class NotifyDocumentIssueView(APIView):

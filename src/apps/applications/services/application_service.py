@@ -71,11 +71,17 @@ class ApplicationService:
         if missing:
             raise MissingRequiredDocuments(missing_types=missing)
 
+        # Calcul automatique du score
+        from src.apps.scoring.services.scoring_service import ApplicationScoringService
+
+        score = ApplicationScoringService.calculate_score(profile, master)
+
         application = Application.objects.create(
             pubkey=f"app_{uuid.uuid4().hex[:24]}",
             candidate_profile=profile,
             master=master,
             niveau=niveau,
+            score=score,
         )
 
         NotificationService.notify_document_issue(

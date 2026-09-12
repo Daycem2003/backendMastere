@@ -20,6 +20,12 @@ class CandidateProfilePolicy:
         été validé (une fois VALIDE, les pièces ont été vérifiées par un
         coordinateur — toute modification doit repasser par une demande
         explicite, pas une édition libre)."""
-        if profile.user_id != user.pk:
+        if profile.statut == CandidateStatus.VALIDE:
             return False
-        return profile.statut != CandidateStatus.VALIDE
+        if user is None or not getattr(user, "is_authenticated", False):
+            # Édition via onboarding_token pour un profil non encore validé
+            return True
+        if profile.user_id and profile.user_id != user.pk:
+            return False
+        return True
+

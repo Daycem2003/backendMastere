@@ -27,20 +27,23 @@ from src.apps.candidate_profile.services.candidate_profile_service import Candid
 from src.apps.reference_data.constants import NATIONALITIES
 
 
+from .academic_record_views import _require_candidate_profile
+
+
 class MyCandidateProfileView(APIView):
     def get_permissions(self):
-        # Seule la création est publique : un candidat n'a pas encore de
-        # compte au moment où il crée son profil. La consultation/mise à
-        # jour exige un compte (créé après validation par le coordinateur).
-        if self.request.method == "POST":
+        # Permettre l'accès public pour la création, ou pour consultation/mise à
+        # jour avec le jeton d'onboarding (ex. lors d'une demande de révision).
+        if self.request.method == "POST" or self.request.headers.get("X-Onboarding-Token"):
             return [AllowAny()]
         return [IsAuthenticated()]
 
     def get(self, request):
-        profile = get_by_user(request.user)
-        if not profile:
-            raise CandidateProfileNotFound()
-        return Response(CandidateProfileSerializer(profile).data)
+        profile = _require_candidate_profile(request)
+        data = CandidateProfileSerializer(profile).data
+        if not profile.user_id:
+            data["onboarding_token"] = profile.onboarding_token
+        return Response(data)
 
     def post(self, request):
         serializer = CreateCandidateProfileSerializer(data=request.data)
@@ -63,14 +66,14 @@ class MyCandidateProfileView(APIView):
         return Response(data, status=status.HTTP_201_CREATED)
 
     def patch(self, request):
-        profile = get_by_user(request.user)
-        if not profile:
-            raise CandidateProfileNotFound()
+        profile = _require_candidate_profile(request)
         serializer = UpdateCandidateProfileSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         dto = UpdateCandidateProfileDTO(**serializer.validated_data)
-        profile = CandidateProfileService.update_profile(profile, dto, request.user)
+        user = request.user if request.user and request.user.is_authenticated else None
+        profile = CandidateProfileService.update_profile(profile, dto, user)
         return Response(CandidateProfileSerializer(profile).data)
+
 
 
 class NationalityListView(APIView):

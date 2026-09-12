@@ -82,7 +82,7 @@ def test_resolve_niveau_m1_when_diplome_type_licence_accepted():
 
 @pytest.mark.django_db
 @patch("src.apps.applications.services.application_service.NotificationService")
-@patch("src.apps.applications.services.application_service.candidate_has_approved_type")
+@patch("src.apps.applications.services.application_service.candidate_has_approved_slots_of_type")
 @patch("src.apps.applications.services.application_service.Application")
 @patch("src.apps.applications.services.application_service.get_active_for_candidate_and_master")
 def test_submit_raises_missing_required_documents(

@@ -2,23 +2,26 @@ from src.apps.eligibility.domain.candidate_snapshot import CandidateSnapshot
 
 
 def build_snapshot_from_candidate_profile(profile) -> CandidateSnapshot:
-    
     diplome = getattr(profile, "diplome", None)
+    if not diplome and hasattr(profile, "diplomes"):
+        diplome = profile.diplomes.first()
     redoublement = getattr(profile, "redoublement", None)
 
     return CandidateSnapshot(
-        licence_type_code=diplome.type_licence.pubkey if diplome else None,
-        average=_latest_average(profile),
+        licence_type_code=diplome.type_licence.pubkey if (diplome and diplome.type_licence) else None,
+        average=_calculate_average(profile),
         repeated_years=(
             redoublement.redoublement_years.count() if redoublement and redoublement.a_redouble else 0
         ),
-        nationality=None,  # non modélisé dans candidate_profile actuel — voir README
+        nationality=getattr(profile, "nationalite", None),
         university_name=diplome.universite if diplome else None,
-        graduation_date=None,  # candidate_profile stocke anneeObtention (str), pas une date -> voir README
-        date_of_birth=None,  # candidate_profile stocke anneeNaissance (int), pas une date -> voir README
+        graduation_date=None,
+        date_of_birth=None,
     )
 
 
-def _latest_average(profile) -> float | None:
-    latest_year = profile.licence_years.order_by("-annee").first()
-    return latest_year.moyenne if latest_year else None
+def _calculate_average(profile) -> float | None:
+    years = list(profile.licence_years.all())
+    if not years:
+        return None
+    return sum(float(y.moyenne) for y in years) / len(years)

@@ -1,3 +1,4 @@
+import pytest
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -7,6 +8,7 @@ from src.apps.eligibility.dto.eligibility_rule import CreateEligibilityRuleDTO
 from src.apps.eligibility.services.eligibility_rule_service import EligibilityRuleService
 
 
+@pytest.mark.django_db
 @patch("src.apps.eligibility.services.eligibility_rule_service.EligibilityCriteria")
 def test_create_serializes_rule_value_to_json(mock_model_cls):
     created = SimpleNamespace(pk=1)

@@ -1,6 +1,29 @@
 from rest_framework import serializers
 
 
+def format_slot_display_name(
+    slot_type: str,
+    domaine: str = "",
+    annee_licence: str = "",
+    redoublement_annee: str = "",
+    justificatif_index: int = 0,
+) -> str:
+    if slot_type == "RELEVE_LICENCE":
+        dom = f" — {domaine}" if domaine else ""
+        annee = f" {annee_licence}" if annee_licence else ""
+        return f"Relevé de notes{dom}{annee}".strip()
+    elif slot_type == "DIPLOME_LICENCE":
+        dom = f" — {domaine}" if domaine else ""
+        return f"Diplôme de licence{dom}".strip()
+    elif slot_type == "RELEVE_M1":
+        return "Relevé de notes — Première année Master (M1)"
+    elif slot_type == "JUSTIFICATIF_REDOUBLEMENT":
+        annee = f" — {redoublement_annee}" if redoublement_annee else ""
+        idx = f" (pièce {justificatif_index + 1})" if justificatif_index else ""
+        return f"Justificatif de redoublement{annee}{idx}".strip()
+    return f"Autre document ({domaine or slot_type})".strip()
+
+
 class DocumentUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
     slot_type = serializers.CharField(min_length=2, max_length=32)
@@ -34,6 +57,8 @@ class DocumentVersionSerializer(serializers.Serializer):
     candidate_profile_pubkey = serializers.SerializerMethodField()
     reviewer_email = serializers.SerializerMethodField()
     download_url = serializers.SerializerMethodField()
+    display_name = serializers.SerializerMethodField()
+    a_redeposer = serializers.SerializerMethodField()
 
     def get_slot_pubkey(self, obj): return obj.slot.pubkey
     def get_slot_type(self, obj): return obj.slot.type
@@ -43,6 +68,18 @@ class DocumentVersionSerializer(serializers.Serializer):
     def get_justificatif_index(self, obj): return obj.slot.justificatif_index
     def get_candidate_profile_pubkey(self, obj): return obj.slot.candidate_profile.pubkey
     def get_reviewer_email(self, obj): return obj.reviewer.email if obj.reviewer_id else None
+
+    def get_display_name(self, obj):
+        return format_slot_display_name(
+            obj.slot.type,
+            obj.slot.domaine,
+            obj.slot.annee_licence,
+            obj.slot.redoublement_annee,
+            obj.slot.justificatif_index,
+        )
+
+    def get_a_redeposer(self, obj):
+        return getattr(obj.slot, "a_redeposer", False)
 
     def get_download_url(self, obj):
         # Jamais généré dans les vues LISTE — cf. context["include_download_url"].
@@ -64,7 +101,18 @@ class DocumentSlotSerializer(serializers.Serializer):
     annee_licence = serializers.CharField()
     redoublement_annee = serializers.CharField()
     justificatif_index = serializers.IntegerField()
+    a_redeposer = serializers.BooleanField()
+    display_name = serializers.SerializerMethodField()
     current_version = serializers.SerializerMethodField()
+
+    def get_display_name(self, obj):
+        return format_slot_display_name(
+            obj.type,
+            obj.domaine,
+            obj.annee_licence,
+            obj.redoublement_annee,
+            obj.justificatif_index,
+        )
 
     def get_current_version(self, obj):
         active = next((v for v in obj.versions.all() if v.is_active and v.deleted_at is None), None)

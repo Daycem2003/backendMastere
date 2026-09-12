@@ -5,6 +5,9 @@ class RoleNotFoundException(NotFound):
     default_detail = "Rôle introuvable."
 
 
+RoleCodeNotFound = RoleNotFoundException
+
+
 class PermissionNotFoundException(NotFound):
     default_detail = "Permission introuvable."
 

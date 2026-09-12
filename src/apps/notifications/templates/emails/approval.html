@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Candidature approuvée - Activez votre compte</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 24px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .header { background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 32px 24px; text-align: center; color: #ffffff; }
+    .header h1 { margin: 0 0 8px; font-size: 22px; font-weight: 700; }
+    .header p { margin: 0; font-size: 14px; opacity: 0.9; }
+    .content { padding: 32px 24px; }
+    .greeting { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .message { font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 24px; }
+    .btn-container { text-align: center; margin: 32px 0; }
+    .btn { display: inline-block; background-color: #2563eb; color: #ffffff !important; font-weight: 600; font-size: 15px; padding: 12px 28px; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+    .notice { font-size: 12px; color: #64748b; background: #f1f5f9; padding: 12px; border-radius: 6px; margin-top: 24px; word-break: break-all; }
+    .footer { background: #f8fafc; padding: 20px 24px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Félicitations !</h1>
+      <p>Plateforme de Candidature aux Mastères</p>
+    </div>
+    <div class="content">
+      <p class="greeting">Bonjour {{ candidate_name }},</p>
+      <p class="message">
+        Nous avons le plaisir de vous informer que votre dossier de candidature a été <strong>approuvé</strong> par l'équipe de coordination.
+      </p>
+      <p class="message">
+        Pour finaliser votre inscription et accéder à votre espace candidat, veuillez activer votre compte en définissant votre mot de passe en cliquant sur le bouton ci-dessous :
+      </p>
+      <div class="btn-container">
+        <a href="{{ activation_link }}" class="btn" target="_blank">Activer mon compte</a>
+      </div>
+      <p class="message">
+        Ce lien d'activation est à usage unique et reste valable pendant 48 heures.
+      </p>
+      <div class="notice">
+        Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :<br>
+        <a href="{{ activation_link }}" style="color: #2563eb;">{{ activation_link }}</a>
+      </div>
+    </div>
+    <div class="footer">
+      <p>Ceci est un message automatique, merci de ne pas y répondre directement.</p>
+    </div>
+  </div>
+</body>
+</html>

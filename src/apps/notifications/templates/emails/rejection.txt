@@ -1,0 +1,10 @@
+Bonjour {{ candidate_name }},
+
+Nous vous informons qu'après examen de votre dossier, votre candidature n'a pas pu être retenue.
+{% if motif %}
+Motif : {{ motif }}
+{% endif %}
+Nous vous remercions pour l'intérêt porté à nos formations et vous souhaitons une bonne continuation.
+
+Cordialement,
+L'équipe de coordination des Mastères

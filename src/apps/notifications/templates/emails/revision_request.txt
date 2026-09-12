@@ -1,0 +1,20 @@
+Bonjour {{ candidate_name }},
+
+L'équipe de coordination a examiné votre dossier de candidature et demande certaines modifications ou pièces complémentaires.
+
+{% if message %}
+Remarques / Éléments à corriger :
+{{ message }}
+{% endif %}
+{% if targeted_documents %}
+Pièces à redéposer obligatoirement :
+{% for doc in targeted_documents %}
+- {{ doc }}
+{% endfor %}
+{% endif %}
+
+Veuillez utiliser le lien suivant pour accéder à votre dossier et effectuer les modifications :
+{{ revision_link }}
+
+Cordialement,
+L'équipe de coordination des Mastères

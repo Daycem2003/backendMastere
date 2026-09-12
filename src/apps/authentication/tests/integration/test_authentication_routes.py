@@ -12,5 +12,7 @@ def test_authentication_routes_are_registered():
         "token/refresh",
         "password/forgot",
         "password/reset",
+        "activate",
         "me",
     }
+

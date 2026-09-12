@@ -135,6 +135,10 @@ class DocumentService:
             justificatif_index=payload.slot.justificatif_index,
             defaults={"pubkey": f"slot_{uuid.uuid4().hex[:24]}"},
         )
+        if getattr(slot, "a_redeposer", False):
+            slot.a_redeposer = False
+            slot.save(update_fields=["a_redeposer", "updated_at"])
+
         previous = (
             DocumentVersion.objects.select_for_update()
             .filter(slot=slot, deleted_at__isnull=True)

@@ -23,9 +23,16 @@ class EligibilityService:
     @staticmethod
     def is_eligible_via_licence(profile: CandidateProfile, master) -> bool:
         diplome = getattr(profile, "diplome", None)
+        if not diplome and hasattr(profile, "diplomes") and hasattr(profile.diplomes, "all"):
+            diplome = profile.diplomes.first()
         if not diplome:
             return False
-        return master.type_licences_acceptees.filter(pk=diplome.type_licence_id).exists()
+        tl_id = getattr(diplome, "type_licence_id", None)
+        if tl_id is None and getattr(diplome, "type_licence", None):
+            tl_id = getattr(diplome.type_licence, "pk", None) or getattr(diplome.type_licence, "id", None)
+        if tl_id is None:
+            return False
+        return bool(master.type_licences_acceptees.filter(pk=tl_id).exists())
 
     @staticmethod
     def is_eligible_via_passerelle(profile: CandidateProfile, master) -> bool:

@@ -10,6 +10,7 @@ import uuid
 
 class CandidateStatus(models.TextChoices):
     EN_ATTENTE = "EN_ATTENTE", "En attente"
+    A_REVISER = "A_REVISER", "À réviser"
     VALIDE = "VALIDE", "Validé"
     REJETE = "REJETE", "Rejeté"
 
@@ -44,6 +45,11 @@ class CandidateProfile(TimestampedSoftDeleteModel):
         max_length=16,
         choices=CandidateStatus.choices,
         default=CandidateStatus.EN_ATTENTE,
+    )
+    latest_revision_message = models.TextField(
+        null=True,
+        blank=True,
+        db_column="latestRevisionMessage",
     )
 
     class Meta:

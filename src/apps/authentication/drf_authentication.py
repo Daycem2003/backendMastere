@@ -21,3 +21,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
         if not user:
             raise exceptions.AuthenticationFailed("User not found or inactive.")
         return user, None
+
+    def authenticate_header(self, request):
+        return self.keyword
+

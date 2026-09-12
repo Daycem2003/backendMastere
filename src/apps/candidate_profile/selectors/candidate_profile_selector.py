@@ -43,10 +43,18 @@ def get_by_user(user):
     if user is None:
         return None
 
-    return CandidateProfile.objects.filter(
-        user_id=user.pk,
-        deleted_at__isnull=True,
-    ).first()
+    return (
+        CandidateProfile.objects.select_related(
+            "master1_year", "master1_year__master", "redoublement"
+        )
+        .prefetch_related("diplomes", "diplomes__type_licence", "licence_years", "licence_years__type_licence", "redoublement__redoublement_years")
+        .filter(
+            Q(user_id=user.pk) | Q(email=user.email),
+            deleted_at__isnull=True,
+        )
+        .first()
+    )
+
 
 
 def get_by_onboarding_token(token: str | None) -> CandidateProfile | None:
@@ -58,10 +66,23 @@ def get_by_onboarding_token(token: str | None) -> CandidateProfile | None:
     if not token:
         return None
 
-    return CandidateProfile.objects.filter(
-        onboarding_token=token,
-        deleted_at__isnull=True,
-    ).first()
+    return (
+        CandidateProfile.objects.select_related(
+            "master1_year", "master1_year__master", "redoublement"
+        )
+        .prefetch_related(
+            "diplomes",
+            "diplomes__type_licence",
+            "licence_years",
+            "licence_years__type_licence",
+            "redoublement__redoublement_years",
+            "document_slots",
+            "document_slots__versions",
+        )
+        .filter(onboarding_token=token, deleted_at__isnull=True)
+        .first()
+    )
+
 
 
 def get_eligible_type_licence(pubkey: str) -> TypeLicence | None:
