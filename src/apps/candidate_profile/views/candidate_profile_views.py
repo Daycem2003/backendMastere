@@ -34,7 +34,14 @@ class MyCandidateProfileView(APIView):
     def get_permissions(self):
         # Permettre l'accès public pour la création, ou pour consultation/mise à
         # jour avec le jeton d'onboarding (ex. lors d'une demande de révision).
-        if self.request.method == "POST" or self.request.headers.get("X-Onboarding-Token"):
+        token = self.request.headers.get("X-Onboarding-Token")
+        has_valid_token = bool(
+            token
+            and isinstance(token, str)
+            and token.strip()
+            and token.strip().lower() not in ("null", "undefined", "none")
+        )
+        if self.request.method == "POST" or has_valid_token:
             return [AllowAny()]
         return [IsAuthenticated()]
 

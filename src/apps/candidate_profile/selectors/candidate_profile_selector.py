@@ -39,22 +39,40 @@ def get_by_pubkey(pubkey: str) -> CandidateProfile | None:
     )
 
 
-def get_by_user(user):
-    if user is None:
+def get_by_user(user) -> CandidateProfile | None:
+    if user is None or not getattr(user, "is_authenticated", True) or not getattr(user, "pk", None):
         return None
 
-    return (
+    qs = (
         CandidateProfile.objects.select_related(
             "master1_year", "master1_year__master", "redoublement"
         )
-        .prefetch_related("diplomes", "diplomes__type_licence", "licence_years", "licence_years__type_licence", "redoublement__redoublement_years")
-        .filter(
-            Q(user_id=user.pk) | Q(email=user.email),
-            deleted_at__isnull=True,
+        .prefetch_related(
+            "diplomes",
+            "diplomes__type_licence",
+            "licence_years",
+            "licence_years__type_licence",
+            "redoublement__redoublement_years",
         )
-        .first()
+        .filter(deleted_at__isnull=True)
     )
 
+    # 1. Priorité absolue : association directe OneToOne par user_id
+    profile = qs.filter(user_id=user.pk).first()
+    if profile:
+        return profile
+
+    # 2. Repli par email si renseigné et non vide
+    user_email = getattr(user, "email", None)
+    if user_email and isinstance(user_email, str) and user_email.strip():
+        profile = qs.filter(email__iexact=user_email.strip()).first()
+        if profile:
+            if profile.user_id is None:
+                profile.user = user
+                profile.save(update_fields=["user"])
+            return profile
+
+    return None
 
 
 def get_by_onboarding_token(token: str | None) -> CandidateProfile | None:
@@ -63,7 +81,11 @@ def get_by_onboarding_token(token: str | None) -> CandidateProfile | None:
     compte), pour enchaîner les appels licence-years/diplome/master1-year/
     redoublement sur le même profil sans authentification.
     """
-    if not token:
+    if not token or not isinstance(token, str):
+        return None
+
+    token_clean = token.strip()
+    if not token_clean or token_clean.lower() in ("null", "undefined", "none"):
         return None
 
     return (
@@ -79,7 +101,7 @@ def get_by_onboarding_token(token: str | None) -> CandidateProfile | None:
             "document_slots",
             "document_slots__versions",
         )
-        .filter(onboarding_token=token, deleted_at__isnull=True)
+        .filter(onboarding_token=token_clean, deleted_at__isnull=True)
         .first()
     )
 

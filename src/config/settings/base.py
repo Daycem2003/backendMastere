@@ -25,7 +25,9 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.security.SecurityMiddleware", "django.middleware.common.CommonMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "src.shared.middleware.cache_control_middleware.PrivateNoCacheAPIMiddleware",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",

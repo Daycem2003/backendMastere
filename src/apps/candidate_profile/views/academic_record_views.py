@@ -42,15 +42,16 @@ def _require_candidate_profile(request):
     retombe systématiquement sur une 404 propre (CandidateProfileNotFound),
     jamais sur une AttributeError.
     """
-    if request.user and request.user.is_authenticated:
+    if request.user and getattr(request.user, "is_authenticated", False):
         profile = get_by_user(request.user)
         if profile is not None:
             return profile
 
     token = request.headers.get("X-Onboarding-Token")
-    profile = get_by_onboarding_token(token)
-    if profile is not None:
-        return profile
+    if token and isinstance(token, str) and token.strip() and token.strip().lower() not in ("null", "undefined", "none"):
+        profile = get_by_onboarding_token(token.strip())
+        if profile is not None:
+            return profile
 
     raise CandidateProfileNotFound()
 
