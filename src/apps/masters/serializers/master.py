@@ -87,6 +87,7 @@ class MasterSerializer(serializers.ModelSerializer):
             "nombre_places", "date_debut", "date_fin", "statut",
             "coordinateur_pubkey", "type_licences_acceptees",
             "passerelles_vers", "passerelles_depuis", "required_documents",
+            "created_at", "updated_at",
         )
         read_only_fields = fields
 
