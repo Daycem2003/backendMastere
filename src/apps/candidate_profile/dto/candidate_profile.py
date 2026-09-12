@@ -5,6 +5,8 @@ class CreateCandidateProfileDTO(BaseModel):
     nom: str = Field(min_length=1, max_length=100)
     prenom: str = Field(min_length=1, max_length=100)
     cin: str = Field(min_length=8, max_length=20)
+    nationalite: str = Field(min_length=1, max_length=100)
+
     email: str
     telephone: str = Field(min_length=6, max_length=20)
     ville: str = Field(min_length=1, max_length=100)
@@ -20,10 +22,12 @@ class CreateCandidateProfileDTO(BaseModel):
 
 class UpdateCandidateProfileDTO(BaseModel):
     telephone: str | None = Field(default=None, min_length=6, max_length=20)
+    nationalite: str | None = Field(default=None, min_length=1, max_length=100)
     ville: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class CreateLicenceYearDTO(BaseModel):
+    type_licence_pubkey: str
     annee: int
     annee_universitaire: str = Field(min_length=4, max_length=20)
     moyenne: float = Field(ge=0, le=20)

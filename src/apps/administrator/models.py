@@ -10,5 +10,5 @@ class Administrateur(TimestampedSoftDeleteModel):
     email = models.TextField(unique=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_ADMINISTRATEURS"

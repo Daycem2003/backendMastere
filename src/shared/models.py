@@ -20,13 +20,12 @@ class PostgreSQLEnumField(models.CharField):
 
 
 class ExistingModel(models.Model):
-    """Base for Prisma-owned tables: Django may read/write rows, never DDL."""
+    """Base for tables now owned by Django migrations."""
 
     id = models.AutoField(primary_key=True)
 
     class Meta:
         abstract = True
-        managed = False
 
 
 class ManagedModel(models.Model):
@@ -45,7 +44,6 @@ class TimestampedSoftDeleteModel(ExistingModel):
 
     class Meta:
         abstract = True
-        managed = False
 
 
 class CreatedSoftDeleteModel(ExistingModel):
@@ -54,4 +52,3 @@ class CreatedSoftDeleteModel(ExistingModel):
 
     class Meta:
         abstract = True
-        managed = False

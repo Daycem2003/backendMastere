@@ -2,24 +2,38 @@ import uuid
 
 from django.db import IntegrityError, transaction
 
-from src.apps.authorization.services.role_assignment_service import RoleAssignmentService
 from src.apps.candidate_profile.models import CandidateProfile
+from src.apps.users.dto.user import CreateUserIdentityDTO
+from src.apps.users.exceptions.user_exceptions import UserAlreadyExists
 from src.apps.users.models import User
 from src.shared.exceptions.auth_exceptions import EmailAlreadyExistsException, InactiveUserException, InvalidCredentialsException, UserNotFoundException
 
 from .password_service import PasswordService
+
+# Rôle attribué à tout compte créé via l'inscription publique. Le seul
+# endroit du code qui écrit une relation utilisateur → rôle reste
+# `authorization` (via `RoleAssignmentService`, appelé par
+# `UserProvisioningService` ci-dessous) — `authentication` ne fait que
+# choisir *quel* rôle demander, jamais assigner le rôle lui-même.
+DEFAULT_REGISTRATION_ROLE_CODE = "CANDIDATE"
 
 
 class AuthenticationService:
     @staticmethod
     @transaction.atomic
     def register(payload):
-        if User.objects.filter(email=payload.email).exists():
-            raise EmailAlreadyExistsException()
+        from src.apps.users.services.user_provisioning_service import (
+            UserProvisioningService,
+        )
+
         try:
-            user = User.objects.create_user(
-                pubkey=f"usr_{uuid.uuid4().hex[:20]}", email=payload.email,
-                password=payload.password,
+            user = UserProvisioningService.create_user_with_role(
+                identity_dto=CreateUserIdentityDTO(
+                    email=payload.email,
+                    password_hash=PasswordService.hash_password(payload.password),
+                ),
+                role_code=DEFAULT_REGISTRATION_ROLE_CODE,
+                assigned_by=None,
             )
             CandidateProfile.objects.create(
                 pubkey=f"cand_{uuid.uuid4().hex[:20]}", user=user, nom=payload.nom,
@@ -27,8 +41,7 @@ class AuthenticationService:
                 telephone=payload.telephone, ville=payload.ville,
                 annee_naissance=payload.annee_naissance,
             )
-            RoleAssignmentService.assign_role(user_pubkey=user.pubkey, role_code="CANDIDATE", assigned_by_pubkey=None)
-        except IntegrityError as error:
+        except (UserAlreadyExists, IntegrityError) as error:
             raise EmailAlreadyExistsException() from error
         return user
 

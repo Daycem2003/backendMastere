@@ -1,61 +1,51 @@
 import logging
 
-from django.db import IntegrityError, transaction
-
-from src.apps.authorization.exceptions.authorization_exceptions import (
-    PrivilegeEscalationException,
-    RoleAssignmentAlreadyExistsException,
-    RoleAssignmentNotFoundException,
-    RoleNotFoundException,
-)
-from src.apps.authorization.models import Role, UserRole
-from src.apps.authorization.selectors.authorization_selector import (
-    invalidate_permission_cache,
-)
-from src.apps.users.models import User
-from src.shared.exceptions.auth_exceptions import UserNotFoundException
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
 
 class RoleAssignmentService:
+    """Seul point d'entrée prévu pour assigner ou changer le rôle d'un
+    utilisateur. Garantit "un seul rôle actif" en logique métier, en plus
+    de la contrainte DB (`OneToOneField` sur `UserRole.user`, voir
+    `user_role.py`) — défense en profondeur : la contrainte DB protège
+    contre les bugs et les accès concurrents, ce service protège contre un
+    usage incorrect de l'API Python (créer un `UserRole` à la main
+    ailleurs romprait l'invariant avant même d'atteindre la DB dans
+    certains flux, ex. tests avec DB différée)."""
+
     @staticmethod
     @transaction.atomic
-    def assign_role(user_pubkey: str, role_code: str, assigned_by_pubkey: str | None):
-        user = User.objects.filter(pubkey=user_pubkey).first()
-        if not user: raise UserNotFoundException()
-        role = Role.objects.filter(code=role_code).first()
-        if not role: raise RoleNotFoundException()
-        if user_pubkey == assigned_by_pubkey and role.code == "ADMIN":
-            raise PrivilegeEscalationException()
-        assigner = User.objects.filter(pubkey=assigned_by_pubkey).first() if assigned_by_pubkey else None
-        try:
-            assignment = UserRole.objects.create(user=user, role=role, assigned_by=assigner)
-        except IntegrityError as error:
-            raise RoleAssignmentAlreadyExistsException() from error
-        invalidate_permission_cache(user_pubkey)
+    def assign_role(user, role_code: str, assigned_by=None):
+        from src.apps.authorization.exceptions.authorization_exceptions import RoleCodeNotFound
+        from src.apps.authorization.models.role import Role
+        from src.apps.authorization.models.user_role import UserRole
+
+        role = Role.objects.filter(code=role_code, deleted_at__isnull=True).first()
+        if not role:
+            raise RoleCodeNotFound()
+
+        assignment, created = UserRole.objects.update_or_create(
+            user=user,
+            defaults={"role": role, "assigned_by": assigned_by},
+        )
         logger.info(
             "rbac_role_assigned",
             extra={
-                "user_pubkey": user_pubkey,
+                "user_id": user.pk,
                 "role_code": role_code,
-                "assigned_by_pubkey": assigned_by_pubkey,
+                "was_created": created,
+                "assigned_by_id": assigned_by.pk if assigned_by else None,
             },
         )
         return assignment
 
     @staticmethod
-    def revoke_role(user_pubkey: str, role_code: str) -> None:
-        with transaction.atomic():
-            deleted, _ = UserRole.objects.filter(user__pubkey=user_pubkey, role__code=role_code).delete()
-        if not deleted: raise RoleAssignmentNotFoundException()
-        invalidate_permission_cache(user_pubkey)
-        logger.info(
-            "rbac_role_revoked",
-            extra={"user_pubkey": user_pubkey, "role_code": role_code},
-        )
+    def get_active_role_code(user) -> str | None:
+        from src.apps.authorization.models.user_role import UserRole
 
-    @staticmethod
-    def list_user_roles(user_pubkey: str):
-        if not User.objects.filter(pubkey=user_pubkey).exists(): raise UserNotFoundException()
-        return UserRole.objects.select_related("role").filter(user__pubkey=user_pubkey)
+        assignment = (
+            UserRole.objects.filter(user=user).select_related("role").first()
+        )
+        return assignment.role.code if assignment else None

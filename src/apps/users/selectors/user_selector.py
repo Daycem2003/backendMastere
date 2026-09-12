@@ -1,70 +1,51 @@
-from django.db.models import Q, QuerySet
+from django.db.models import OuterRef, QuerySet, Subquery
 
-from src.apps.users.dto.user import UserFilterDTO
 from src.apps.users.models import User
 
 
-def get_user_by_id(user_id: int, include_deleted: bool = False) -> User | None:
-    """Retrieve a user by their primary key id."""
-    qs = User.objects.all()
-    if not include_deleted:
-        qs = qs.filter(deleted_at__isnull=True)
-    return qs.filter(id=user_id).first()
+def _annotate_rbac_role(queryset: QuerySet) -> QuerySet:
+    """Annote chaque `User` avec `rbac_role_code`, le code du rôle RBAC
+    actif (source unique de vérité). Une seule requête SQL avec sous-
+    requête corrélée — pas de requête supplémentaire par utilisateur.
+
+    NOTE : `AUTH_USER_ROLES` (`UserRole`) n'a pas de champ `deleted_at`
+    (vérifié sur le modèle réel, pas supposé) — une seule ligne existe par
+    utilisateur une fois la contrainte `auth_user_single_role` appliquée
+    (voir authorization_patch/), donc pas de filtre de soft-delete à
+    ajouter ici : l'existence de la ligne suffit.
+    """
+    from src.apps.authorization.models.user_role import UserRole
+
+    active_role_code = UserRole.objects.filter(user_id=OuterRef("pk")).values("role__code")[:1]
+    return queryset.annotate(rbac_role_code=Subquery(active_role_code))
 
 
-def get_user_by_pubkey(pubkey: str, include_deleted: bool = False) -> User | None:
-    """Retrieve a user by their public key."""
-    qs = User.objects.all()
-    if not include_deleted:
-        qs = qs.filter(deleted_at__isnull=True)
-    return qs.filter(pubkey=pubkey).first()
+def get_by_pubkey(pubkey: str) -> User | None:
+    return _annotate_rbac_role(
+        User.objects.filter(pubkey=pubkey, deleted_at__isnull=True)
+    ).first()
 
 
-def get_user_by_email(email: str, include_deleted: bool = False) -> User | None:
-    """Retrieve a user by normalized email."""
-    normalized = User.objects.normalize_email(email)
-    qs = User.objects.all()
-    if not include_deleted:
-        qs = qs.filter(deleted_at__isnull=True)
-    return qs.filter(email=normalized).first()
+def get_by_email(email: str) -> User | None:
+    return User.objects.filter(email=email, deleted_at__isnull=True).first()
 
 
-def get_active_user_by_pubkey(pubkey: str) -> User | None:
-    """Retrieve an active and non-deleted user by public key."""
-    return User.objects.filter(pubkey=pubkey, is_active=True, deleted_at__isnull=True).first()
+def list_all(is_active: bool | None = None) -> QuerySet:
+    """Ne filtre plus jamais par rôle via une colonne `User` — le rôle
+    n'appartient plus à ce modèle. Pour filtrer par rôle RBAC, voir
+    `list_by_rbac_role_code`."""
+    qs = User.objects.filter(deleted_at__isnull=True)
+    if is_active is not None:
+        qs = qs.filter(is_active=is_active)
+    return _annotate_rbac_role(qs).order_by("email")
 
 
-def get_active_user_by_email(email: str) -> User | None:
-    """Retrieve an active and non-deleted user by normalized email."""
-    normalized = User.objects.normalize_email(email)
-    return User.objects.filter(email=normalized, is_active=True, deleted_at__isnull=True).first()
+def list_by_rbac_role_code(role_code: str) -> QuerySet:
+    """Filtre par rôle RBAC actif — une seule requête (jointure via
+    `filter`, pas de boucle Python)."""
+    from src.apps.authorization.models.user_role import UserRole
 
-
-def list_users(filters: UserFilterDTO | None = None) -> QuerySet[User]:
-    """Retrieve a filtered and optimized QuerySet of users."""
-    qs = User.objects.all().order_by("-created_at")
-
-    if filters is None:
-        return qs.filter(deleted_at__isnull=True)
-
-    if filters.is_deleted is True:
-        qs = qs.filter(deleted_at__isnull=False)
-    elif filters.is_deleted is False:
-        qs = qs.filter(deleted_at__isnull=True)
-
-    if filters.is_active is not None:
-        qs = qs.filter(is_active=filters.is_active)
-
-    if filters.search:
-        search_term = filters.search.strip()
-        qs = qs.filter(
-            Q(email__icontains=search_term)
-            | Q(pubkey__icontains=search_term)
-        )
-
-    return qs
-
-
-def count_users(filters: UserFilterDTO | None = None) -> int:
-    """Count total users matching the filter criteria."""
-    return list_users(filters).count()
+    user_ids = UserRole.objects.filter(role__code=role_code).values_list("user_id", flat=True)
+    return _annotate_rbac_role(
+        User.objects.filter(id__in=user_ids, deleted_at__isnull=True)
+    ).order_by("email")

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 
-import bcrypt
+from django.contrib.auth.hashers import check_password, make_password
 
 from src.apps.users.models import User
 from src.shared.exceptions.auth_exceptions import InvalidTokenException
@@ -13,12 +13,12 @@ RESET_TOKEN_TTL_MINUTES = 30
 class PasswordService:
     @staticmethod
     def hash_password(raw_password: str) -> str:
-        return bcrypt.hashpw(raw_password.encode(), bcrypt.gensalt()).decode()
+        return make_password(raw_password)
 
     @staticmethod
     def verify_password(raw_password: str, hashed_password: str) -> bool:
         try:
-            return bcrypt.checkpw(raw_password.encode(), hashed_password.encode())
+            return check_password(raw_password, hashed_password)
         except (ValueError, TypeError):
             return False
 

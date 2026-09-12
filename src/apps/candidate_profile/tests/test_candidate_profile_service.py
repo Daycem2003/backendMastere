@@ -19,13 +19,14 @@ pytestmark = pytest.mark.django_db
 
 def _dto(**overrides):
     base = {
-    "nom": "Ben Ali",
-    "prenom": "Sami",
-    "cin": "12345678",
-    "email": "[sami@example.com](mailto:sami@example.com)",
-    "telephone": "20123456",
-    "ville": "Tunis",
-    "annee_naissance": 2000,
+        "nom": "Ben Ali",
+        "prenom": "Sami",
+        "cin": "12345678",
+        "email": "sami@example.com",
+        "telephone": "20123456",
+        "ville": "Tunis",
+        "nationalite": "Tunisienne",
+        "annee_naissance": 2000,
     }
     base.update(overrides)
     return CreateCandidateProfileDTO(**base)
@@ -44,12 +45,13 @@ def test_create_profile_raises_if_already_exists(mock_get_by_user):
 @patch("src.apps.candidate_profile.services.candidate_profile_service.get_by_user")
 def test_create_profile_generates_pubkey(mock_get_by_user, mock_model_cls):
     mock_get_by_user.return_value = None
+    mock_model_cls.objects.filter.return_value.exists.return_value = False
     created = SimpleNamespace(pk=1)
     mock_model_cls.objects.create.return_value = created
     result = CandidateProfileService.create_profile(
-    _dto(),
-    user=SimpleNamespace(pk=99),
-)
+        _dto(),
+        user=SimpleNamespace(pk=99),
+    )
     assert result is created
     call_kwargs = mock_model_cls.objects.create.call_args.kwargs
     assert call_kwargs["pubkey"].startswith("cand_")

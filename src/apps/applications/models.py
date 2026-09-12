@@ -41,7 +41,7 @@ class Application(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True, db_column="deletedAt")
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_APPLICATIONS"
         constraints = [
             models.UniqueConstraint(

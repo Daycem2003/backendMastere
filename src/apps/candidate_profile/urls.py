@@ -5,14 +5,21 @@ from .views.academic_record_views import (
     LicenceYearListView,
     Master1YearView,
     RedoublementView,
+    TypeLicenceListView,
 )
-from .views.candidate_profile_views import CandidateProfileDetailView, MyCandidateProfileView
+from .views.candidate_profile_views import (
+    CandidateProfileDetailView,
+    MyCandidateProfileView,
+    NationalityListView,
+)
 
 urlpatterns = [
     path("me", MyCandidateProfileView.as_view()),
+    path("nationalities", NationalityListView.as_view()),
     path("me/licence-years", LicenceYearListView.as_view()),
     path("me/diplome", DiplomeView.as_view()),
     path("me/master1-year", Master1YearView.as_view()),
     path("me/redoublement", RedoublementView.as_view()),
+    path("type-licences", TypeLicenceListView.as_view()),
     path("<str:pubkey>", CandidateProfileDetailView.as_view()),
 ]

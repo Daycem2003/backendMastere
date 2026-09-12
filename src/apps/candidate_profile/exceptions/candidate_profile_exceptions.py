@@ -1,9 +1,11 @@
 from rest_framework.exceptions import APIException, NotFound, PermissionDenied, ValidationError
+from rest_framework import status
+from rest_framework.exceptions import APIException
 
-
-class ProfileAlreadyExists(ValidationError):
-    default_detail = "Un profil candidat existe déjà pour cet utilisateur."
-
+class ProfileAlreadyExists(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = "Un profil candidat existe déjà avec ce CIN."
+    default_code = "profile_already_exists"
 
 class CandidateProfileNotFound(NotFound):
     default_detail = "Profil candidat introuvable."

@@ -12,8 +12,29 @@ def get_by_pubkey(pubkey: str) -> CandidateProfile | None:
     )
 
 
-def get_by_user(user) -> CandidateProfile | None:
-    return CandidateProfile.objects.filter(user_id=user.pk, deleted_at__isnull=True).first()
+def get_by_user(user):
+    if user is None:
+        return None
+
+    return CandidateProfile.objects.filter(
+        user_id=user.pk,
+        deleted_at__isnull=True,
+    ).first()
+
+
+def get_by_onboarding_token(token: str | None) -> CandidateProfile | None:
+    """Résout un profil candidat via son jeton d'onboarding — utilisé
+    pendant tout le parcours de création (avant que le candidat ait un
+    compte), pour enchaîner les appels licence-years/diplome/master1-year/
+    redoublement sur le même profil sans authentification.
+    """
+    if not token:
+        return None
+
+    return CandidateProfile.objects.filter(
+        onboarding_token=token,
+        deleted_at__isnull=True,
+    ).first()
 
 
 def get_eligible_type_licence(pubkey: str) -> TypeLicence | None:

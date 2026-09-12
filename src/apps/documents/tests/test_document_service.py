@@ -14,8 +14,8 @@ def test_rejection_requires_reason():
 
 def test_can_candidate_apply_requires_every_required_type():
     with patch(
-        "src.apps.documents.services.document_service.candidate_has_approved_type",
-        side_effect=lambda candidate_id, document_type: document_type == "DIPLOME",
+        "src.apps.documents.services.document_service.candidate_has_approved_slots_of_type",
+        side_effect=lambda candidate_id, slot_type: slot_type == "DIPLOME",
     ):
         assert DocumentService.can_candidate_apply(1, ["DIPLOME"]) is True
         assert DocumentService.can_candidate_apply(1, ["DIPLOME", "RELEVE_NOTES"]) is False

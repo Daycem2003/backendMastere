@@ -1,6 +1,11 @@
+from dataclasses import Field
+
 from django.db import models
 
 from src.shared.models import TimestampedSoftDeleteModel
+
+
+import uuid
 
 
 class CandidateStatus(models.TextChoices):
@@ -14,12 +19,21 @@ class CandidateProfile(TimestampedSoftDeleteModel):
 
     user = models.OneToOneField(
         "users.User",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="candidate_profile",
         db_column="userId",
+        null=True,
+        blank=True,
+    )
+
+    onboarding_token = models.TextField(
+        unique=True,
+        null=True,
+        blank=True,
     )
 
     nom = models.TextField()
+    nationalite = models.CharField(max_length=100, default="")
     prenom = models.TextField()
     cin = models.TextField(unique=True)
     email = models.TextField()
@@ -27,13 +41,14 @@ class CandidateProfile(TimestampedSoftDeleteModel):
     ville = models.TextField()
     annee_naissance = models.IntegerField(db_column="anneeNaissance")
     statut = models.CharField(
-        max_length=16, choices=CandidateStatus.choices, default=CandidateStatus.EN_ATTENTE
+        max_length=16,
+        choices=CandidateStatus.choices,
+        default=CandidateStatus.EN_ATTENTE,
     )
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_CANDIDATE_PROFILES"
-
 
 class TypeLicence(TimestampedSoftDeleteModel):
     pubkey = models.TextField(unique=True)
@@ -43,7 +58,7 @@ class TypeLicence(TimestampedSoftDeleteModel):
     est_eligible = models.BooleanField(default=True, db_column="estEligible")
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_TYPE_LICENCES"
 
 
@@ -57,24 +72,31 @@ class LicenceYear(TimestampedSoftDeleteModel):
         db_column="candidateProfileId",
     )
 
+    type_licence = models.ForeignKey(
+        TypeLicence,
+        on_delete=models.PROTECT,
+        related_name="licence_years",
+        db_column="typeLicenceId",
+    )
+
     annee = models.IntegerField()
     annee_universitaire = models.TextField(db_column="anneeUniversitaire")
     moyenne = models.FloatField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_LICENCE_YEARS"
 
 
 class Diplome(TimestampedSoftDeleteModel):
     pubkey = models.TextField(unique=True)
 
-    candidate_profile = models.OneToOneField(
-        CandidateProfile,
-        on_delete=models.CASCADE,
-        related_name="diplome",
-        db_column="candidateProfileId",
-    )
+    candidate_profile = models.ForeignKey(
+    CandidateProfile,
+    on_delete=models.CASCADE,
+    related_name="diplomes",
+    db_column="candidateProfileId",
+)
     type_licence = models.ForeignKey(
         TypeLicence,
         on_delete=models.PROTECT,
@@ -86,7 +108,7 @@ class Diplome(TimestampedSoftDeleteModel):
     universite = models.TextField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_DIPLOMES"
 
 
@@ -127,7 +149,7 @@ class Master1Year(TimestampedSoftDeleteModel):
     etablissement = models.TextField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_MASTER1_YEARS"
 
 
@@ -143,7 +165,7 @@ class Redoublement(TimestampedSoftDeleteModel):
     a_redouble = models.BooleanField(default=False, db_column="aRedouble")
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_REDOUBLEMENTS"
 
 
@@ -159,5 +181,5 @@ class RedoublementYear(TimestampedSoftDeleteModel):
     annee = models.TextField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_REDOUBLEMENT_YEARS"

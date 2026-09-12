@@ -1,4 +1,5 @@
 from rest_framework import permissions, status
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -19,10 +20,17 @@ from src.apps.candidate_profile.serializers.candidate_profile import (
     UpdateCandidateProfileSerializer,
 )
 from src.apps.candidate_profile.services.candidate_profile_service import CandidateProfileService
+from src.apps.reference_data.constants import NATIONALITIES
 
 
 class MyCandidateProfileView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    def get_permissions(self):
+        # Seule la création est publique : un candidat n'a pas encore de
+        # compte au moment où il crée son profil. La consultation/mise à
+        # jour exige un compte (créé après validation par le coordinateur).
+        if self.request.method == "POST":
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def get(self, request):
         profile = get_by_user(request.user)
@@ -34,8 +42,21 @@ class MyCandidateProfileView(APIView):
         serializer = CreateCandidateProfileSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         dto = CreateCandidateProfileDTO(**serializer.validated_data)
-        profile = CandidateProfileService.create_profile(dto, request.user)
-        return Response(CandidateProfileSerializer(profile).data, status=status.HTTP_201_CREATED)
+
+        user = request.user if request.user and request.user.is_authenticated else None
+
+        profile = CandidateProfileService.create_profile(dto, user)
+
+        # Le jeton n'est exposé que dans cette réponse de création : c'est
+        # le seul moment où le frontend en a besoin (pour l'utiliser ensuite
+        # comme en-tête X-Onboarding-Token sur les appels licence-years,
+        # diplome, master1-year, redoublement). Ajouté manuellement plutôt que
+        # via le serializer pour garantir qu'il ne fuite jamais sur GET/detail,
+        # même si CandidateProfileSerializer venait un jour à inclure ce champ.
+        data = CandidateProfileSerializer(profile).data
+        data["onboarding_token"] = profile.onboarding_token
+
+        return Response(data, status=status.HTTP_201_CREATED)
 
     def patch(self, request):
         profile = get_by_user(request.user)
@@ -46,6 +67,13 @@ class MyCandidateProfileView(APIView):
         dto = UpdateCandidateProfileDTO(**serializer.validated_data)
         profile = CandidateProfileService.update_profile(profile, dto, request.user)
         return Response(CandidateProfileSerializer(profile).data)
+
+
+class NationalityListView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return Response(NATIONALITIES)
 
 
 class CandidateProfileDetailView(APIView):

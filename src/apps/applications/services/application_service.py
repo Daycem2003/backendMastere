@@ -17,7 +17,7 @@ from src.apps.applications.models import Application, ApplicationStatus
 from src.apps.applications.selectors.application_selector import get_active_for_candidate_and_master
 from src.apps.candidate_profile.models import CandidateProfile
 from src.apps.candidate_profile.services.eligibility_service import EligibilityService
-from src.apps.documents.selectors.document_selector import candidate_has_approved_type
+from src.apps.documents.selectors.document_selector import candidate_has_approved_slots_of_type
 from src.apps.notifications.dto.notification import NotifyDocumentIssueDTO
 from src.apps.notifications.models import NotificationMotif
 from src.apps.notifications.services.notification_service import NotificationService
@@ -66,7 +66,7 @@ class ApplicationService:
             master.required_documents.filter(deleted_at__isnull=True).values_list("type", flat=True)
         )
         missing = [
-            t for t in required_types if not candidate_has_approved_type(profile.id, t)
+            t for t in required_types if not candidate_has_approved_slots_of_type(profile.id, t)
         ]
         if missing:
             raise MissingRequiredDocuments(missing_types=missing)

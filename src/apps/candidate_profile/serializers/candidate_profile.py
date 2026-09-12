@@ -18,12 +18,14 @@ class CreateCandidateProfileSerializer(serializers.Serializer):
     email = serializers.EmailField()
     telephone = serializers.CharField(max_length=20)
     ville = serializers.CharField(max_length=100)
+    nationalite = serializers.CharField(max_length=100)
     annee_naissance = serializers.IntegerField()
 
 
 class UpdateCandidateProfileSerializer(serializers.Serializer):
     telephone = serializers.CharField(max_length=20, required=False)
     ville = serializers.CharField(max_length=100, required=False)
+    nationalite = serializers.CharField(max_length=100)
 
 
 class TypeLicenceSerializer(serializers.ModelSerializer):
@@ -41,6 +43,7 @@ class LicenceYearSerializer(serializers.ModelSerializer):
 
 
 class CreateLicenceYearSerializer(serializers.Serializer):
+    type_licence_pubkey = serializers.CharField()
     annee = serializers.IntegerField()
     annee_universitaire = serializers.CharField(max_length=20)
     moyenne = serializers.FloatField(min_value=0, max_value=20)
@@ -92,14 +95,13 @@ class RedoublementSerializer(serializers.ModelSerializer):
         fields = ("pubkey", "a_redouble", "redoublement_years")
         read_only_fields = fields
 
-
 class SetRedoublementSerializer(serializers.Serializer):
     a_redouble = serializers.BooleanField()
     annees = serializers.ListField(child=serializers.CharField(max_length=20), required=False)
 
 
 class CandidateProfileSerializer(serializers.ModelSerializer):
-    diplome = DiplomeSerializer(read_only=True)
+    diplomes = DiplomeSerializer(many=True, read_only=True)
     master1_year = Master1YearSerializer(read_only=True)
     redoublement = RedoublementSerializer(read_only=True)
     licence_years = LicenceYearSerializer(many=True, read_only=True)
@@ -108,7 +110,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
         model = CandidateProfile
         fields = (
             "pubkey", "nom", "prenom", "cin", "email", "telephone", "ville",
-            "annee_naissance", "statut", "diplome", "master1_year",
-            "redoublement", "licence_years",
+            "annee_naissance", "statut", "diplomes", "master1_year",
+            "redoublement", "licence_years", "nationalite"
         )
         read_only_fields = fields

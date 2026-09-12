@@ -53,7 +53,7 @@ class NotificationRecord(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True, db_column="deletedAt")
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_NOTIFICATION_RECORDS"
         indexes = [
             models.Index(fields=["candidate_profile", "lu_le"]),

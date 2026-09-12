@@ -2,25 +2,24 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Dépendances système nécessaires (psycopg2, prisma binary engine)
+# Dépendances système nécessaires à PostgreSQL
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
-    openssl \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Installation de Poetry
 RUN pip install --no-cache-dir poetry
 
+# Installation des dépendances Python
 COPY pyproject.toml poetry.lock* ./
+
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi --no-root
 
+# Code source
 COPY . .
-
-# Génère le client Prisma dans l'image
-RUN poetry run prisma generate
 
 EXPOSE 8000
 
-CMD ["poetry", "run", "uvicorn", "src.config.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

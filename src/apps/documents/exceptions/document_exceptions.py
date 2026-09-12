@@ -29,6 +29,9 @@ class NoCandidateProfile(PermissionDenied):
 class FileTooLarge(ValidationError):
     default_detail = "Le fichier dépasse la taille maximale autorisée."
 
-
+class StorageQuotaExceeded(ValidationError):
+    default_detail = "Le quota de stockage ou d'opérations R2 a été atteint."
 class UnsupportedFileType(ValidationError):
     default_detail = "Type de fichier non autorisé."
+class InvalidSlotType(ValidationError):
+    default_detail = "Type de slot documentaire invalide."

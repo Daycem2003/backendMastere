@@ -8,7 +8,7 @@ class ScoreFormula(TimestampedSoftDeleteModel):
     master = models.OneToOneField("masters.Master", on_delete=models.CASCADE, related_name="score_formula", db_column="masterId")
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_SCORE_FORMULAS"
 
 
@@ -19,5 +19,5 @@ class ScoreCriterion(TimestampedSoftDeleteModel):
     poids = models.FloatField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "MST_SCORE_CRITERIA"

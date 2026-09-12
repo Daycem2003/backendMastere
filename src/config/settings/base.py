@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from urllib.parse import urlparse
+from corsheaders.defaults import default_headers
 
 from dotenv import load_dotenv
 
@@ -13,7 +14,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes", "django.contrib.staticfiles",
-    "rest_framework",
+    "rest_framework","corsheaders","src.apps.reference_data.apps.ReferenceDataConfig",
     "src.apps.users.apps.UsersConfig", "src.apps.candidate_profile.apps.CandidateProfileConfig",
     "src.apps.coordinator.apps.CoordinatorConfig", "src.apps.administrator.apps.AdministratorConfig",
     "src.apps.masters.apps.MastersConfig", "src.apps.documents.apps.DocumentsConfig",
@@ -22,13 +23,50 @@ INSTALLED_APPS = [
     "src.apps.notifications.apps.NotificationsConfig", "src.apps.websocket_events.apps.WebsocketEventsConfig",
 ]
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware", "django.middleware.common.CommonMiddleware",
 ]
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "x-onboarding-token",
+]
+CORS_ALLOW_CREDENTIALS = True
+R2_ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID")
+R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID")
+R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
+R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME")
+R2_ENDPOINT_URL = os.getenv("R2_ENDPOINT_URL")
 ROOT_URLCONF = "src.config.urls"
 WSGI_APPLICATION = "src.config.wsgi.application"
 ASGI_APPLICATION = "src.config.asgi.application"
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 _database_url = urlparse(DATABASE_URL)
+
+R2_MAX_STORAGE_GB = int(os.getenv("R2_MAX_STORAGE_GB", "10"))
+R2_STORAGE_WARNING_PERCENT = int(os.getenv("R2_STORAGE_WARNING_PERCENT", "70"))
+R2_STORAGE_CRITICAL_PERCENT = int(os.getenv("R2_STORAGE_CRITICAL_PERCENT", "85"))
+R2_STORAGE_BLOCK_PERCENT = int(os.getenv("R2_STORAGE_BLOCK_PERCENT", "95"))
+
+R2_MAX_CLASS_A = int(os.getenv("R2_MAX_CLASS_A", "1000000"))
+R2_CLASS_A_WARNING_PERCENT = int(os.getenv("R2_CLASS_A_WARNING_PERCENT", "70"))
+R2_CLASS_A_CRITICAL_PERCENT = int(os.getenv("R2_CLASS_A_CRITICAL_PERCENT", "85"))
+R2_CLASS_A_BLOCK_PERCENT = int(os.getenv("R2_CLASS_A_BLOCK_PERCENT", "95"))
+
+R2_MAX_CLASS_B = int(os.getenv("R2_MAX_CLASS_B", "10000000"))
+R2_CLASS_B_WARNING_PERCENT = int(os.getenv("R2_CLASS_B_WARNING_PERCENT", "70"))
+R2_CLASS_B_CRITICAL_PERCENT = int(os.getenv("R2_CLASS_B_CRITICAL_PERCENT", "85"))
+R2_CLASS_B_BLOCK_PERCENT = int(os.getenv("R2_CLASS_B_BLOCK_PERCENT", "95"))
+
+R2_MAX_FILE_SIZE_MB = int(os.getenv("R2_MAX_FILE_SIZE_MB", "5"))
+
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -50,5 +88,4 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
 JWT_ALGORITHM = "HS256"
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 JWT_REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "7"))
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 REST_FRAMEWORK = {"DEFAULT_AUTHENTICATION_CLASSES": ["src.apps.authentication.drf_authentication.JWTAuthentication"], "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"], "UNAUTHENTICATED_USER": None}
