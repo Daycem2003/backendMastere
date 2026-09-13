@@ -46,6 +46,9 @@ class NotificationRecord(models.Model):
     objet = models.TextField()
     corps = models.TextField()
 
+    piece_jointe_cle = models.TextField(null=True, blank=True, db_column="pieceJointeCle")
+    piece_jointe_nom = models.TextField(null=True, blank=True, db_column="pieceJointeNom")
+
     lu_le = models.DateTimeField(null=True, blank=True, db_column="luLe")
 
     envoyee_le = models.DateTimeField(auto_now_add=True, db_column="envoyeeLe")
@@ -65,6 +68,7 @@ class BroadcastTarget(models.TextChoices):
     COORDINATEURS = "COORDINATEURS", "Coordinateurs"
     CANDIDATS = "CANDIDATS", "Candidats"
     TOUS = "TOUS", "Tous"
+    MASTER_RANG = "MASTER_RANG", "Par rang de Master"
 
 
 class BroadcastNotification(models.Model):
@@ -76,8 +80,19 @@ class BroadcastNotification(models.Model):
         default=BroadcastTarget.TOUS,
         db_column="cible",
     )
+    master = models.ForeignKey(
+        "masters.Master",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="broadcast_notifications",
+        db_column="masterId",
+    )
+    rang_max = models.IntegerField(null=True, blank=True, db_column="rangMax")
     objet = models.TextField()
     message = models.TextField()
+    piece_jointe_cle = models.TextField(null=True, blank=True, db_column="pieceJointeCle")
+    piece_jointe_nom = models.TextField(null=True, blank=True, db_column="pieceJointeNom")
     created_by = models.ForeignKey(
         "users.User",
         on_delete=models.SET_NULL,

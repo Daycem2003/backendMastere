@@ -1,6 +1,10 @@
 from django.urls import path
 
-from .views.broadcast_views import BroadcastNotificationView
+from .views.broadcast_views import (
+    BroadcastNotificationView,
+    NotificationAttachmentDownloadView,
+    NotifyTopRankedView,
+)
 from .views.notification_views import (
     MarkNotificationReadView,
     MyNotificationListView,
@@ -13,6 +17,10 @@ urlpatterns = [
     path("broadcast/", BroadcastNotificationView.as_view()),
     path("broadcasts", BroadcastNotificationView.as_view()),
     path("broadcasts/", BroadcastNotificationView.as_view()),
+    path("notify-top-ranked", NotifyTopRankedView.as_view()),
+    path("notify-top-ranked/", NotifyTopRankedView.as_view()),
+    path("<str:pubkey>/attachment-url", NotificationAttachmentDownloadView.as_view()),
+    path("<str:pubkey>/attachment-url/", NotificationAttachmentDownloadView.as_view()),
     path("notify/document-issue", NotifyDocumentIssueView.as_view()),
     path("me", MyNotificationListView.as_view()),
     path("me/", MyNotificationListView.as_view()),
