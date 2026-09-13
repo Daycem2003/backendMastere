@@ -53,18 +53,51 @@ class MyNotificationListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        profile = _require_candidate_profile(request)
+        from src.apps.candidate_profile.selectors.candidate_profile_selector import get_by_user
+        from src.apps.notifications.models import BroadcastNotification, BroadcastTarget
+
+        profile = get_by_user(request.user)
         unread_only = request.query_params.get("unread") == "true"
-        notifications = list_for_candidate(profile.pubkey, unread_only=unread_only)
-        return Response(NotificationRecordSerializer(notifications, many=True).data)
+
+        if profile is not None:
+            notifications = list_for_candidate(profile.pubkey, unread_only=unread_only)
+            return Response(NotificationRecordSerializer(notifications, many=True).data)
+
+        # Utilisateur sans profil candidat (ex: coordinateur, administrateur)
+        broadcasts = BroadcastNotification.objects.filter(
+            cible__in=[BroadcastTarget.COORDINATEURS, BroadcastTarget.TOUS]
+        ).order_by("-envoyee_le")
+        data = [
+            {
+                "pubkey": b.pubkey,
+                "motif": "AUTRE",
+                "objet": b.objet,
+                "corps": b.message,
+                "envoyee_le": b.envoyee_le.isoformat() if b.envoyee_le else "",
+                "is_read": False,
+                "document_concerne": None,
+                "application_pubkey": None,
+            }
+            for b in broadcasts
+        ]
+        return Response(data)
 
 
 class MyUnreadNotificationCountView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        profile = _require_candidate_profile(request)
-        return Response({"unread_count": unread_count_for_candidate(profile.pubkey)})
+        from src.apps.candidate_profile.selectors.candidate_profile_selector import get_by_user
+        from src.apps.notifications.models import BroadcastNotification, BroadcastTarget
+
+        profile = get_by_user(request.user)
+        if profile is not None:
+            return Response({"unread_count": unread_count_for_candidate(profile.pubkey)})
+
+        count = BroadcastNotification.objects.filter(
+            cible__in=[BroadcastTarget.COORDINATEURS, BroadcastTarget.TOUS]
+        ).count()
+        return Response({"unread_count": count})
 
 
 class MarkNotificationReadView(APIView):

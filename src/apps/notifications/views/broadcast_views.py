@@ -67,8 +67,20 @@ class BroadcastNotificationView(APIView):
             "envoyee_le": broadcast.envoyee_le.isoformat(),
         }
 
-        # 1. Émission globale sur le groupe broadcast:all
-        notify_group("broadcast:all", "notification:broadcast", payload)
+        # 1. Émission sur les groupes WebSocket correspondants
+        if cible == BroadcastTarget.TOUS:
+            notify_group("broadcast:all", "notification:broadcast", payload)
+            notify_group("broadcast:all", "notification:new", payload)
+        elif cible == BroadcastTarget.COORDINATEURS:
+            notify_group("role:coordinateur", "notification:broadcast", payload)
+            notify_group("role:coordinateur", "notification:new", payload)
+            notify_group("role:COORDINATEURS", "notification:broadcast", payload)
+            notify_group("role:COORDINATEURS", "notification:new", payload)
+        elif cible == BroadcastTarget.CANDIDATS:
+            notify_group("role:candidat", "notification:broadcast", payload)
+            notify_group("role:candidat", "notification:new", payload)
+            notify_group("role:CANDIDATS", "notification:broadcast", payload)
+            notify_group("role:CANDIDATS", "notification:new", payload)
 
         # 2. Persistance et émission ciblée vers les utilisateurs
         target_user_ids = set()

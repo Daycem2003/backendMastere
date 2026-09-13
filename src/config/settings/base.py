@@ -13,15 +13,25 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 INSTALLED_APPS = [
-    "django.contrib.contenttypes", "django.contrib.staticfiles",
-    "rest_framework","corsheaders","src.apps.reference_data.apps.ReferenceDataConfig",
+    "daphne",
+    "django.contrib.contenttypes",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "corsheaders",
+    "src.apps.reference_data.apps.ReferenceDataConfig",
     "src.apps.authentication.apps.AuthenticationConfig",
-    "src.apps.users.apps.UsersConfig", "src.apps.candidate_profile.apps.CandidateProfileConfig",
-    "src.apps.coordinator.apps.CoordinatorConfig", "src.apps.administrator.apps.AdministratorConfig",
-    "src.apps.masters.apps.MastersConfig", "src.apps.documents.apps.DocumentsConfig",
-    "src.apps.eligibility.apps.EligibilityConfig", "src.apps.scoring.apps.ScoringConfig",
-    "src.apps.applications.apps.ApplicationsConfig", "src.apps.authorization.apps.AuthorizationConfig",
-    "src.apps.notifications.apps.NotificationsConfig", "src.apps.websocket_events.apps.WebsocketEventsConfig",
+    "src.apps.users.apps.UsersConfig",
+    "src.apps.candidate_profile.apps.CandidateProfileConfig",
+    "src.apps.coordinator.apps.CoordinatorConfig",
+    "src.apps.administrator.apps.AdministratorConfig",
+    "src.apps.masters.apps.MastersConfig",
+    "src.apps.documents.apps.DocumentsConfig",
+    "src.apps.eligibility.apps.EligibilityConfig",
+    "src.apps.scoring.apps.ScoringConfig",
+    "src.apps.applications.apps.ApplicationsConfig",
+    "src.apps.authorization.apps.AuthorizationConfig",
+    "src.apps.notifications.apps.NotificationsConfig",
+    "src.apps.websocket_events.apps.WebsocketEventsConfig",
 ]
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

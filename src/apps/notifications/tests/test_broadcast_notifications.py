@@ -39,3 +39,32 @@ class TestBroadcastNotifications:
             assert get_response.status_code == 200
             assert len(get_response.data) >= 1
             assert get_response.data[0]["objet"] == "Test Annonce"
+
+    def test_coordinator_can_list_broadcast_notifications_without_candidate_profile(self):
+        from src.apps.notifications.views.notification_views import MyNotificationListView
+        from src.apps.notifications.models import BroadcastNotification, BroadcastTarget
+        from src.apps.users.models import User
+
+        coord_user = User.objects.create(
+            pubkey="usr_coord_test_notif",
+            email="coord_notif@test.com",
+            password="hash",
+            is_active=True,
+        )
+
+        BroadcastNotification.objects.create(
+            pubkey="bcast_test_coord_1",
+            cible=BroadcastTarget.COORDINATEURS,
+            objet="Message aux coordinateurs",
+            message="Contenu important",
+        )
+
+        factory = APIRequestFactory()
+        request = factory.get("/api/v1/notifications/me")
+        force_authenticate(request, user=coord_user)
+
+        view = MyNotificationListView.as_view()
+        response = view(request)
+        assert response.status_code == 200
+        assert len(response.data) >= 1
+        assert response.data[0]["objet"] == "Message aux coordinateurs"
