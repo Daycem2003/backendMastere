@@ -59,3 +59,38 @@ class NotificationRecord(models.Model):
             models.Index(fields=["candidate_profile", "lu_le"]),
             models.Index(fields=["application"]),
         ]
+
+
+class BroadcastTarget(models.TextChoices):
+    COORDINATEURS = "COORDINATEURS", "Coordinateurs"
+    CANDIDATS = "CANDIDATS", "Candidats"
+    TOUS = "TOUS", "Tous"
+
+
+class BroadcastNotification(models.Model):
+    id = models.AutoField(primary_key=True)
+    pubkey = models.TextField(unique=True)
+    cible = models.CharField(
+        max_length=32,
+        choices=BroadcastTarget.choices,
+        default=BroadcastTarget.TOUS,
+        db_column="cible",
+    )
+    objet = models.TextField()
+    message = models.TextField()
+    created_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="broadcast_notifications",
+        db_column="createdById",
+    )
+    envoyee_le = models.DateTimeField(auto_now_add=True, db_column="envoyeeLe")
+    created_at = models.DateTimeField(auto_now_add=True, db_column="createdAt")
+
+    class Meta:
+        managed = True
+        db_table = "MST_BROADCAST_NOTIFICATIONS"
+        ordering = ["-envoyee_le"]
+

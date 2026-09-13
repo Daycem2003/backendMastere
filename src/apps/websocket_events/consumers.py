@@ -15,14 +15,18 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4401)  # non authentifié
             return
 
-        self.group_name = f"user:{user.pk}"
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        self.groups_joined = [f"user:{user.pk}", "broadcast:all"]
+        for grp in self.groups_joined:
+            await self.channel_layer.group_add(grp, self.channel_name)
+
         await self.accept()
         logger.info("ws_connected", extra={"user_id": user.pk})
 
     async def disconnect(self, close_code):
-        if hasattr(self, "group_name"):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if hasattr(self, "groups_joined"):
+            for grp in self.groups_joined:
+                await self.channel_layer.group_discard(grp, self.channel_name)
+
 
     async def receive_json(self, content, **kwargs):
         # Canal descendant uniquement (serveur -> client) pour l'instant.

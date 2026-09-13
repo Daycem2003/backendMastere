@@ -24,3 +24,19 @@ class IsNotificationRecipient(BasePermission):
             and request.user.is_authenticated
             and obj.candidate_profile.user_id == request.user.pk
         )
+
+
+class CanBroadcastNotifications(BasePermission):
+    """Seul un admin peut diffuser des annonces avec ciblage."""
+
+    def has_permission(self, request, view) -> bool:
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and (
+                getattr(request.user, "administrateur", None) is not None
+                or getattr(request.user, "is_staff", False)
+                or AuthorizationService.has_role(request.user.pubkey, "ADMIN")
+            )
+        )
+

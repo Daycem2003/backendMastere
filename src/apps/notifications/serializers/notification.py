@@ -28,3 +28,18 @@ class NotificationRecordSerializer(serializers.ModelSerializer):
 
     def get_is_read(self, obj) -> bool:
         return obj.lu_le is not None
+
+
+class BroadcastNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        from src.apps.notifications.models import BroadcastNotification
+        model = BroadcastNotification
+        fields = ("pubkey", "cible", "objet", "message", "envoyee_le", "created_at")
+        read_only_fields = fields
+
+
+class CreateBroadcastNotificationSerializer(serializers.Serializer):
+    cible = serializers.ChoiceField(choices=["COORDINATEURS", "CANDIDATS", "TOUS"], default="TOUS")
+    objet = serializers.CharField(max_length=255)
+    message = serializers.CharField(max_length=5000)
+
