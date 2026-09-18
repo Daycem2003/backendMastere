@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "src.apps.authorization.apps.AuthorizationConfig",
     "src.apps.notifications.apps.NotificationsConfig",
     "src.apps.websocket_events.apps.WebsocketEventsConfig",
+     "src.apps.knowledge.apps.KnowledgeConfig",
 ]
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
