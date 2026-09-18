@@ -1,6 +1,54 @@
+import uuid
+
+from django.contrib.auth.hashers import make_password
 from django.db import models
 
 from src.shared.models import TimestampedSoftDeleteModel
+
+
+class UserManager(models.Manager):
+    """Fabrique d'identités `User`.
+
+    Ce modèle ne hérite PAS de `AbstractBaseUser` (l'autorisation est
+    déléguée au RBAC `Role` / `UserRole`), donc `django.contrib.auth`
+    n'apporte ni `create_user` ni `create_superuser`. On en fournit une
+    petite usine compatible avec le contrat du domaine :
+     - `pubkey` est un champ unique sans défaut : il est généré
+       automatiquement via `generate_pubkey` quand il n'est pas fourni ;
+     - `password` est reçu en clair puis haché via `make_password`, ce qui
+       reste cohérent avec `PasswordService.hash_password` (le champ stocke
+       toujours un hash). Un appelant ayant déjà un hash peut continuer à
+       utiliser `User.objects.create(password=hash)` directement.
+    """
+
+    @staticmethod
+    def generate_pubkey() -> str:
+        return f"usr_{uuid.uuid4().hex[:24]}"
+
+    def create_user(
+        self,
+        email: str,
+        password: str | None = None,
+        *,
+        pubkey: str | None = None,
+        **extra_fields,
+    ) -> "User":
+        if not email:
+            raise ValueError("Un `User` doit avoir un email.")
+        resolved_pubkey = pubkey if pubkey is not None else self.generate_pubkey()
+        stored_hash = make_password(password) if password else ""
+        return self.create(
+            pubkey=resolved_pubkey,
+            email=email,
+            password=stored_hash,
+            **extra_fields,
+        )
+
+    def create_superuser(
+        self, email: str, password: str | None = None, **extra_fields
+    ) -> "User":
+        extra_fields.setdefault("is_active", True)
+        return self.create_user(email, password, **extra_fields)
 
 
 class User(TimestampedSoftDeleteModel):
@@ -20,6 +68,8 @@ class User(TimestampedSoftDeleteModel):
     ou un autre ORM, ça reste hors de mon contrôle : à vérifier de ton
     côté (voir README, section "recherche à faire").
     """
+
+    objects = UserManager()
 
     pubkey = models.TextField(unique=True)
     email = models.TextField(unique=True)

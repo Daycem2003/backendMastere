@@ -30,6 +30,16 @@ class AuthorizationService:
         ).exists()
 
     @staticmethod
+    def get_user_roles(user_pubkey: str) -> list[str]:
+        """Return the active role codes attached to a user via the RBAC table."""
+        return list(
+            UserRole.objects
+            .filter(user__pubkey=user_pubkey, role__deleted_at__isnull=True)
+            .values_list("role__code", flat=True)
+            .order_by("role__code")
+        )
+
+    @staticmethod
     def has_any_permission(user_pubkey: str, permission_codes: list[str]) -> bool:
         return UserRole.objects.filter(
             user__pubkey=user_pubkey,

@@ -35,7 +35,8 @@ dev = [
     "pytest-django (>=4.14.0,<5.0.0)",
     "black (>=26.5.1,<27.0.0)",
     "ruff (>=0.16.3,<0.17.0)",
-    "pytest-asyncio (>=1.4.0,<2.0.0)"
+    "pytest-asyncio (>=1.4.0,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)"
 ]
 
 [tool.pytest.ini_options]
