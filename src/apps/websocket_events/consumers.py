@@ -3,6 +3,8 @@ import logging
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
+from src.apps.websocket_events.emitter import sanitize_group_name
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +39,9 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4401)  # non authentifié
             return
 
-        self.groups_joined = await _get_user_groups(user)
+        # On normalise les noms de groupe (barre basse pour le « : » interdits)
+        # aux deux bords (emitter ET consumer) : voir sanitize_group_name().
+        self.groups_joined = [sanitize_group_name(g) for g in await _get_user_groups(user)]
         for grp in self.groups_joined:
             await self.channel_layer.group_add(grp, self.channel_name)
 
