@@ -80,8 +80,25 @@ Building a RAG-based assistant. Stages:
       - DETERMINISM CAVEAT: embedding temperature=0 is bit-exact, but 27b-mlx GENERATION at
       temperature=0 is only *semantically* reproducible (MLX FP nondeterminism; seed= does not
       fully pin it). Facts + citations are stable run-to-run; wording varies slightly. Fine for CLI.
-5. API/integration -- NOT STARTED
-6. Frontend UI -- NOT STARTED
+5. API/integration -- DONE (on `feature/rag-assistant`)
+   - Endpoint: `POST /api/v1/knowledge/ask` (mounted in config/urls.py). Thin DRF layer over
+     `generation.generate_answer()` -- generation/retrieval untouched. Files: serializers/knowledge.py,
+     services/knowledge_service.py, exceptions/knowledge_exceptions.py, views/knowledge_views.py,
+     knowledge/urls.py.
+   - Serializer: `query` (3..2000 chars, trimmed), `top_n` (1..10, default 5), `min_score`
+     (0.0..1.0 or null; omitted -> calibrated floor 0.01; null -> opt out), optional `filename`.
+   - Permission: `IsAuthenticated` (confirmed by user -- no PII, but gates the shared LLM for
+     rate-limiting). No role restriction. One-line flip to AllowAny if it later goes public.
+   - Response: {status, question, grounded, answer, citations[], context[], context_count, model,
+     deterministic}. status in {"answered" | "answered_ungrounded" | "no_relevant_context"}.
+     Empty/no-context is HTTP 200 (a status field), NOT an error. Ollama down -> HTTP 503
+     (KnowledgeAssistantUnavailableException; service maps generation/retrieval RuntimeError->503).
+   - VERIFIED LIVE: 200 grounded (FR + AR, per-claim [n] citations, honestly "non mentionne" when
+     the corpus lacks a fact); 200 no_relevant_context @ min_score=0.5; 400 empty/over-long/out-of
+     range top_n; 401 no auth; 503 @ dead OLLAMA_BASE_URL in ~1s. CAVEAT: one /ask ~= 15-40s
+     (local 27b). To test 503, point OLLAMA_BASE_URL at an unused port, do NOT stop real Ollama
+     (300s/900s internal timeouts make a down Ollama hang the request, not fast-fail).
+6. Frontend UI -- NOT STARTED (out of scope; user said backend-only, "get to it eventually")
 
 Known data quality note: OCR-recovered chunks (from font-garbled/scanned PDFs) have 
 some artifacts but are searchable/embeddable — acceptable for RAG, don't over-polish 
