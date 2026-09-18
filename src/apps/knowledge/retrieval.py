@@ -179,12 +179,12 @@ def search(query, top_n=DEFAULT_TOP, min_score=DEFAULT_MIN_SCORE, filename=None,
     For a much larger corpus, replace the in-Python ranking loop with a pgvector
     ORDER BY c.embedding <=> %s::vector query plus an IVFFlat index."""
     from django.db import connection
-    from pgvector.psycopg2 import register_vector
     from src.apps.knowledge.models import KnowledgeChunk
 
     # Best effort: register the pgvector adapter so .embedding parses cleanly;
     # _to_float_list also copes with a raw '[...]' string if it does not.
     try:
+        from pgvector.psycopg2 import register_vector
         connection.ensure_connection()
         register_vector(connection.connection)
     except Exception:
